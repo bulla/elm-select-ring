@@ -36,11 +36,13 @@ to the end of the array.
 # Select an element
 
 @docs selectAt, selectFirst, selectLast, selectFocused
+@docs selectFirstMatching
 
 
 # Deselect an element
 
 @docs deselectAt, deselectFirst, deselectLast, deselectFocused
+@docs clearSelected, deselectMatching
 
 
 # Toggle an element selection
@@ -55,17 +57,14 @@ to the end of the array.
 
 # Accessors
 
-@docs get, getFocused, getSelected
+@docs size, get, getFirst, getLast, getFocused, getSelected
 
 
 # Transform
 
 @docs toList, toArray
-
-
-# Higher order helpers
-
-@docs mapFocused, map, mapEachIntoArray, mapEach
+@docs map
+@docs mapFocused, mapEachIntoList, mapEachIntoArray
 
 -}
 
@@ -73,6 +72,10 @@ import Array exposing (Array)
 import Array.Extra as Array
 import Maybe
 import Maybe.Extra as Maybe
+
+
+
+-- Definition
 
 
 type alias SelectRing a =
@@ -434,7 +437,7 @@ selectFocused ring =
     selectAt ring.focused ring
 
 
-{-| Select the element in the ring that match the provided predicate.
+{-| Select the first element in the ring that matches the provided predicate.
 This replaces the currently selected element.
 -}
 selectFirstMatching : (a -> Bool) -> SelectRing a -> SelectRing a
@@ -502,20 +505,13 @@ deselectFocused ring =
     deselectAt ring.focused ring
 
 
-{-| Deselect all elements in the ring that match the provided predicate.
+{-| Deselect currently selected element if it matches the provided predicate.
 -}
-deselectFirstMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-deselectFirstMatching predicate ring =
-    let
-        matchingIndex =
-            ring.elements
-                |> Array.toIndexedList
-                |> List.filter (\( _, element ) -> predicate element)
-                |> List.map Tuple.first
-                |> List.head
-    in
-    matchingIndex
-        |> Maybe.map (\index -> deselectAt index ring)
+deselectMatching : (a -> Bool) -> SelectRing a -> SelectRing a
+deselectMatching predicate ring =
+    getSelected ring
+        |> Maybe.filter (\selected -> predicate selected)
+        |> Maybe.map (\_ -> clearSelected ring)
         |> Maybe.withDefault ring
 
 
@@ -534,14 +530,14 @@ toggleAt index ring =
         selectAt index ring
 
 
-{-| Toggle selection of the first element of the ring (if selected).
+{-| Toggle selection of the first element in the ring.
 -}
 toggleFirst : SelectRing a -> SelectRing a
 toggleFirst ring =
     toggleAt 0 ring
 
 
-{-| Toggle selection of the last element of the ring (if selected).
+{-| Toggle selection of the last element in the ring.
 -}
 toggleLast : SelectRing a -> SelectRing a
 toggleLast ring =
@@ -646,7 +642,7 @@ getFocused ring =
 getSelected : SelectRing a -> Maybe a
 getSelected ring =
     ring.selected
-        |> Maybe.andThen (\selected -> get selected ring)
+        |> Maybe.andThen (\index -> get index ring)
 
 
 
@@ -667,8 +663,12 @@ toArray ring =
     ring.elements
 
 
-
--- Higher order helpers
+map : (a -> b) -> SelectRing a -> SelectRing b
+map mutator ring =
+    { elements = Array.map mutator ring.elements
+    , focused = ring.focused
+    , selected = ring.selected
+    }
 
 
 mapFocused : (a -> b) -> SelectRing a -> Maybe b
@@ -676,12 +676,9 @@ mapFocused mutator ring =
     Maybe.map mutator (getFocused ring)
 
 
-map : (a -> b) -> SelectRing a -> SelectRing b
-map mutator ring =
-    { elements = Array.map mutator ring.elements
-    , focused = ring.focused
-    , selected = ring.selected
-    }
+mapEachIntoList : (a -> b) -> (a -> b) -> (a -> b) -> SelectRing a -> List b
+mapEachIntoList basicMutator focusedMutator selectedMutator ring =
+    Array.toList (mapEachIntoArray basicMutator focusedMutator selectedMutator ring)
 
 
 mapEachIntoArray : (a -> b) -> (a -> b) -> (a -> b) -> SelectRing a -> Array b
@@ -698,8 +695,3 @@ mapEachIntoArray basicMutator focusedMutator selectedMutator ring =
                 else
                     basicMutator element
             )
-
-
-mapEach : (a -> b) -> (a -> b) -> (a -> b) -> SelectRing a -> List b
-mapEach basicMutator focusedMutator selectedMutator ring =
-    Array.toList (mapEachIntoArray basicMutator focusedMutator selectedMutator ring)
