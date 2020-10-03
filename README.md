@@ -4,6 +4,18 @@ An elm library for rings that may have selected elements.
 
 Several modules are available.
 
+## Focus ring
+
+This module provides a form of array that allows navigating through its elements as if it was
+a ring and focusing on a single element.
+
+Moving the cursor around allows to focus on a single element.
+When the cursor is at the end of the array, focusing on the next element will return focus to the
+first element of the array.
+When the cursor is at the beginning of the array, focusing on the previous element will return focus
+to the end of the array.
+
+
 ## Select ring
 
 This module provides a form of array that allows navigating through its elements (or focusing)
