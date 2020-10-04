@@ -15,6 +15,16 @@ first element of the array.
 When the cursor is at the beginning of the array, focusing on the previous element will return focus
 to the end of the array.
 
+## Zipper ring
+
+This **experimental** module provides a form of non-empty focused ring that uses a zipper list as 
+its internal structure instead of an array.
+
+Moving the focus around allows to focus on a single element.
+When the focus is at the end, focusing on the next element will return focus to the first element.
+When the focus is at the beginning, focusing on the previous element will return focus to the last
+element.
+
 
 ## Select ring
 

@@ -9,7 +9,7 @@ module ZipperRing exposing
     )
 
 {-| A zipper ring
-This _experimental_ module provides a form of non-empty focused ring that uses a zipper list as its
+This **experimental** module provides a form of non-empty focused ring that uses a zipper list as its
 internal structure instead of an array.
 
 Moving the focus around allows to focus on a single element.
