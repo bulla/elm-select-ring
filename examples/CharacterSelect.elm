@@ -102,7 +102,8 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [] [ text "Select your character" ]
+        [ h1 [ style "padding" "12px" ]
+            [ text "Select your character" ]
         , div []
             [ characterSelectorView model.characters ]
         , div [ style "clear" "both" ]
@@ -196,7 +197,7 @@ chevronLeft =
             [ title "Previous"
             , onClick PreviousClicked
             ]
-            [ text "<" ]
+            [ text "❮" ]
         ]
 
 
@@ -213,7 +214,7 @@ chevronRight =
             [ title "Next"
             , onClick NextClicked
             ]
-            [ text ">" ]
+            [ text "❱" ]
         ]
 
 
@@ -225,6 +226,6 @@ selectedCharacterView characters =
                 |> Maybe.map characterToString
                 |> Maybe.withDefault "None"
     in
-    div [ style "padding" "20px 10px" ]
+    div [ style "padding" "20px 12px" ]
         [ text ("Selected: " ++ characterName)
         ]
