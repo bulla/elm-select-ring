@@ -181,11 +181,11 @@ removeAt : Int -> SelectRing a -> SelectRing a
 removeAt index ring =
     let
         removedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
 
         focusedIndex =
             if removedIndex == size ring - 1 then
-                modBy (ring.focused - 1) (size ring)
+                modBy (size ring) (ring.focused - 1)
 
             else
                 ring.focused
@@ -265,7 +265,7 @@ removeSelected ring =
 focusOn : Int -> SelectRing a -> SelectRing a
 focusOn index ring =
     { ring
-        | focused = modBy index (size ring)
+        | focused = modBy (size ring) index
     }
 
 
@@ -275,7 +275,7 @@ When focus is on the last element, this results in focusing on the first element
 focusOnNext : SelectRing a -> SelectRing a
 focusOnNext ring =
     { ring
-        | focused = modBy (ring.focused + 1) (size ring)
+        | focused = modBy (size ring) (ring.focused + 1)
     }
 
 
@@ -285,7 +285,7 @@ When focus is on the first element, this results in focusing on the last element
 focusOnPrevious : SelectRing a -> SelectRing a
 focusOnPrevious ring =
     { ring
-        | focused = modBy (ring.focused - 1) (size ring)
+        | focused = modBy (size ring) (ring.focused - 1)
     }
 
 
@@ -409,7 +409,7 @@ selectAt : Int -> SelectRing a -> SelectRing a
 selectAt index ring =
     let
         selectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     { ring
         | selected = Just selectedIndex
@@ -475,7 +475,7 @@ deselectAt : Int -> SelectRing a -> SelectRing a
 deselectAt index ring =
     let
         deselectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     if ring.selected == Just deselectedIndex then
         clearSelected ring
@@ -582,7 +582,7 @@ isSelected : Int -> SelectRing a -> Bool
 isSelected index ring =
     let
         selectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     ring.selected == Just selectedIndex
 
@@ -591,7 +591,7 @@ isSelected index ring =
 -}
 isFocused : Int -> SelectRing a -> Bool
 isFocused index ring =
-    ring.focused == modBy index (size ring)
+    ring.focused == modBy (size ring) index
 
 
 
@@ -611,7 +611,7 @@ get : Int -> SelectRing a -> Maybe a
 get index ring =
     let
         elementIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     Array.get elementIndex ring.elements
 

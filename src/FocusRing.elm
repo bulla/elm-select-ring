@@ -228,7 +228,7 @@ When focus is on the first element, this results in focusing on the last element
 focusOnPrevious : FocusRing a -> FocusRing a
 focusOnPrevious ring =
     { ring
-        | focused = modBy (ring.focused - 1) (size ring)
+        | focused = modBy (size ring) (ring.focused - 1)
     }
 
 
