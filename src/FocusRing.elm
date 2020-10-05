@@ -157,11 +157,11 @@ removeAt : Int -> FocusRing a -> FocusRing a
 removeAt index ring =
     let
         removedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
 
         focusedIndex =
             if removedIndex == size ring - 1 then
-                modBy (ring.focused - 1) (size ring)
+                modBy (size ring) (ring.focused - 1)
 
             else
                 ring.focused
@@ -208,7 +208,7 @@ removeFocused ring =
 focusOn : Int -> FocusRing a -> FocusRing a
 focusOn index ring =
     { ring
-        | focused = modBy index (size ring)
+        | focused = modBy (size ring) index
     }
 
 
@@ -218,7 +218,7 @@ When focus is on the last element, this results in focusing on the first element
 focusOnNext : FocusRing a -> FocusRing a
 focusOnNext ring =
     { ring
-        | focused = modBy (ring.focused + 1) (size ring)
+        | focused = modBy (size ring) (ring.focused + 1)
     }
 
 
@@ -356,7 +356,7 @@ isEmpty ring =
 -}
 isFocused : Int -> FocusRing a -> Bool
 isFocused index ring =
-    ring.focused == modBy index (size ring)
+    ring.focused == modBy (size ring) index
 
 
 
@@ -376,7 +376,7 @@ get : Int -> FocusRing a -> Maybe a
 get index ring =
     let
         elementIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     Array.get elementIndex ring.elements
 
