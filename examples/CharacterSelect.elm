@@ -189,9 +189,13 @@ chevronLeft =
         [ style "float" "left"
         , style "font-size" "32px"
         , style "cursor" "pointer"
-        , style "margin" "18px"
+        , style "user-select" "none"
+        , style "margin" "24px 12px"
         ]
-        [ a [ onClick PreviousClicked ]
+        [ a
+            [ title "Previous"
+            , onClick PreviousClicked
+            ]
             [ text "<" ]
         ]
 
@@ -202,9 +206,13 @@ chevronRight =
         [ style "float" "left"
         , style "font-size" "32px"
         , style "cursor" "pointer"
-        , style "margin" "18px"
+        , style "user-select" "none"
+        , style "margin" "24px 12px"
         ]
-        [ a [ onClick NextClicked ]
+        [ a
+            [ title "Next"
+            , onClick NextClicked
+            ]
             [ text ">" ]
         ]
 
