@@ -47,3 +47,12 @@ When the cursor is at the end of the array, focusing on the next element will re
 first element of the array.
 When the cursor is at the beginning of the array, focusing on the previous element will return focus
 to the end of the array.
+
+# Examples
+
+In-game character selector example. See CharacterSelect.elm file.
+
+## Resources
+
+Useful tool for animated GIFs edition: https://ezgif.com/
+Credits to Neslug for the Mario GIFs: https://www.deviantart.com/neslug/gallery/3553116/super-mario
