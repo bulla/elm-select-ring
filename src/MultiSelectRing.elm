@@ -52,7 +52,9 @@ to the end of the array.
 
 # Predicates
 
-@docs isEmpty, isNoneSelected, isAnySelected, isSelected, isFocused
+@docs isEmpty
+@docs isNoneSelected, isAnySelected, isSelectedAt
+@docs isFocusedAt, isFocusedMatching
 
 
 # Accessors
@@ -478,7 +480,7 @@ toggleAt index ring =
         toggleIndex =
             modBy (size ring) index
     in
-    if isSelected toggleIndex ring then
+    if isSelectedAt toggleIndex ring then
         deselectAt toggleIndex ring
 
     else
@@ -533,8 +535,8 @@ isAnySelected ring =
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is selected.
 -}
-isSelected : Int -> MultiSelectRing a -> Bool
-isSelected index ring =
+isSelectedAt : Int -> MultiSelectRing a -> Bool
+isSelectedAt index ring =
     let
         selectedIndex =
             modBy (size ring) index
@@ -544,9 +546,18 @@ isSelected index ring =
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is focused.
 -}
-isFocused : Int -> MultiSelectRing a -> Bool
-isFocused index ring =
+isFocusedAt : Int -> MultiSelectRing a -> Bool
+isFocusedAt index ring =
     ring.focused == modBy (size ring) index
+
+
+{-| Indicate whether or not the focused element matches the provided predicate.
+-}
+isFocusedMatching : (a -> Bool) -> MultiSelectRing a -> Bool
+isFocusedMatching predicate ring =
+    getFocused ring
+        |> Maybe.map predicate
+        |> Maybe.withDefault False
 
 
 
@@ -600,7 +611,7 @@ getSelected ring =
         |> Array.toIndexedList
         |> List.filterMap
             (\( index, element ) ->
-                if isSelected index ring then
+                if isSelectedAt index ring then
                     Just element
 
                 else
@@ -652,7 +663,7 @@ mapEachIntoArray basicMutator focusedMutator selectedMutator ring =
                 if index == ring.focused then
                     focusedMutator element
 
-                else if isSelected index ring then
+                else if isSelectedAt index ring then
                     selectedMutator element
 
                 else
