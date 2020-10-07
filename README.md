@@ -50,9 +50,11 @@ to the end of the array.
 
 # Examples
 
-In-game character selector example. See CharacterSelect.elm file.
+1. In-game character selector example. See CharacterSelect.elm file.
+2. 
 
 ## Resources
 
 - Useful tool for animated GIFs edition: https://ezgif.com/
 - Credits to Neslug for the Mario GIFs: https://www.deviantart.com/neslug/gallery/3553116/super-mario
+- Identify Unicode characters: http://shapecatcher.com/

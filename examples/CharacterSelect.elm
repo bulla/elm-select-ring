@@ -1,5 +1,11 @@
 module CharacterSelect exposing (..)
 
+{-| In-game character selector example backed by a FocusRing.
+
+Credits to Neslug for the Mario GIFs <https://www.deviantart.com/neslug/gallery/3553116/super-mario>
+
+-}
+
 import Browser
 import FocusRing exposing (FocusRing)
 import Html exposing (Html, a, div, h1, img, text)
@@ -15,8 +21,8 @@ main =
     Browser.element
         { init = init
         , update = update
-        , subscriptions = subscriptions
         , view = view
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -72,6 +78,8 @@ update msg model =
             )
 
 
+{-| Focus on the previous character
+-}
 previousCharacter : Model -> Model
 previousCharacter model =
     { model
@@ -79,20 +87,13 @@ previousCharacter model =
     }
 
 
+{-| Focus on the next character
+-}
 nextCharacter : Model -> Model
 nextCharacter model =
     { model
         | characters = FocusRing.focusOnNext model.characters
     }
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
 
 
 
@@ -111,12 +112,14 @@ view model =
         ]
 
 
+{-| Show a representation of the characters FocusRing.
+-}
 characterSelectorView : FocusRing Character -> Html Msg
 characterSelectorView characters =
     let
         characterImages =
             characters
-                |> FocusRing.mapEachIntoList stillImage animatedImage
+                |> FocusRing.mapEachIntoList stillCharacterImage animatedCharacterImage
     in
     div []
         [ chevronLeft
@@ -125,8 +128,10 @@ characterSelectorView characters =
         ]
 
 
-stillImage : Character -> Html msg
-stillImage character =
+{-| Show a still representation of the provided character.
+-}
+stillCharacterImage : Character -> Html msg
+stillCharacterImage character =
     let
         characterName =
             characterToString character
@@ -146,8 +151,10 @@ stillImage character =
         ]
 
 
-animatedImage : Character -> Html msg
-animatedImage character =
+{-| Show an animated representation of the provided character.
+-}
+animatedCharacterImage : Character -> Html msg
+animatedCharacterImage character =
     let
         characterName =
             characterToString character
@@ -159,7 +166,7 @@ animatedImage character =
         , style "padding" "4px"
         ]
         [ img
-            [ src ("images/" ++ String.toLower characterName ++ "-sprite.gif")
+            [ src ("images/" ++ String.toLower characterName ++ "-animated.gif")
             , alt characterName
             , title characterName
             , height 64
@@ -168,6 +175,8 @@ animatedImage character =
         ]
 
 
+{-| Convert the provided character to its String representation.
+-}
 characterToString : Character -> String
 characterToString character =
     case character of
@@ -184,6 +193,8 @@ characterToString character =
             "Yoshi"
 
 
+{-| Show a left chevron for selecting previous character.
+-}
 chevronLeft : Html Msg
 chevronLeft =
     div
@@ -201,6 +212,8 @@ chevronLeft =
         ]
 
 
+{-| Show a right chevron for selecting next character.
+-}
 chevronRight : Html Msg
 chevronRight =
     div
@@ -218,6 +231,8 @@ chevronRight =
         ]
 
 
+{-| Show the name of the currently selected character.
+-}
 selectedCharacterView : FocusRing Character -> Html msg
 selectedCharacterView characters =
     let
