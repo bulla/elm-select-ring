@@ -7,9 +7,11 @@ Credits to Neslug for the Mario GIFs <https://www.deviantart.com/neslug/gallery/
 -}
 
 import Browser
+import Browser.Events exposing (onKeyDown)
 import Html exposing (Html, a, div, h1, img, text)
 import Html.Attributes exposing (alt, height, src, style, title)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode exposing (Decoder)
 import SelectRing exposing (SelectRing)
 
 
@@ -21,8 +23,8 @@ main =
     Browser.element
         { init = init
         , update = update
+        , subscriptions = subscriptions
         , view = view
-        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -64,18 +66,26 @@ type Msg
     = PreviousClicked
     | NextClicked
     | ItemClicked Item
+    | ButtonPressed Button
+
+
+type Button
+    = LeftArrow
+    | RightArrow
+    | Space
+    | Enter
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PreviousClicked ->
-            ( previousItem model
+            ( focusOnPreviousItem model
             , Cmd.none
             )
 
         NextClicked ->
-            ( nextItem model
+            ( focusOnNextItem model
             , Cmd.none
             )
 
@@ -84,25 +94,32 @@ update msg model =
             , Cmd.none
             )
 
+        ButtonPressed button ->
+            ( applyButtonPress button model
+            , Cmd.none
+            )
 
-{-| Focus on the previous item
+
+{-| Focus on the previous item.
 -}
-previousItem : Model -> Model
-previousItem model =
+focusOnPreviousItem : Model -> Model
+focusOnPreviousItem model =
     { model
         | items = SelectRing.focusOnPrevious model.items
     }
 
 
-{-| Focus on the next item
+{-| Focus on the next item.
 -}
-nextItem : Model -> Model
-nextItem model =
+focusOnNextItem : Model -> Model
+focusOnNextItem model =
     { model
         | items = SelectRing.focusOnNext model.items
     }
 
 
+{-| Toggle selection of the provided item.
+-}
 toggleItem : Item -> Model -> Model
 toggleItem toggledItem model =
     { model
@@ -111,6 +128,75 @@ toggleItem toggledItem model =
                 |> SelectRing.focusOnFirstMatching (\item -> item == toggledItem)
                 |> SelectRing.toggleFocused
     }
+
+
+{-| Toggle selection of the currently focused item.
+-}
+toggleFocused : Model -> Model
+toggleFocused model =
+    { model
+        | items = SelectRing.toggleFocused model.items
+    }
+
+
+{-| Apply the corresponding action in response of a key pressed.
+-}
+applyButtonPress : Button -> Model -> Model
+applyButtonPress button model =
+    case button of
+        LeftArrow ->
+            focusOnPreviousItem model
+
+        RightArrow ->
+            focusOnNextItem model
+
+        Space ->
+            toggleFocused model
+
+        Enter ->
+            toggleFocused model
+
+
+
+-- SUBSCRIPTIONS
+
+
+{-| Subscribe to the key pressed events.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ onKeyDown (Decode.map ButtonPressed decodeButton)
+        ]
+
+
+{-| Decode a key related event into its corresponding Button event.
+-}
+decodeButton : Decoder Button
+decodeButton =
+    Decode.field "key" Decode.string
+        |> Decode.andThen toButton
+
+
+{-| Convert a key name into its corresponding Button.
+-}
+toButton : String -> Decoder Button
+toButton key =
+    case key of
+        "ArrowLeft" ->
+            Decode.succeed LeftArrow
+
+        "ArrowRight" ->
+            Decode.succeed RightArrow
+
+        " " ->
+            Decode.succeed Space
+
+        "Enter" ->
+            Decode.succeed Enter
+
+        _ ->
+            Decode.fail "Skip"
 
 
 
