@@ -52,7 +52,9 @@ to the end of the array.
 
 # Predicates
 
-@docs isEmpty, isNoneSelected, isAnySelected, isSelected, isFocused
+@docs isEmpty
+@docs isNoneSelected, isAnySelected, isSelectedAt, isSelectedMatching
+@docs isFocusedAt, isFocusedMatching
 
 
 # Accessors
@@ -473,11 +475,7 @@ If the element is already deselected, the same SelectRing is returned unchanged.
 -}
 deselectAt : Int -> SelectRing a -> SelectRing a
 deselectAt index ring =
-    let
-        deselectedIndex =
-            modBy (size ring) index
-    in
-    if ring.selected == Just deselectedIndex then
+    if isSelectedAt index ring then
         clearSelected ring
 
     else
@@ -523,7 +521,7 @@ deselectMatching predicate ring =
 -}
 toggleAt : Int -> SelectRing a -> SelectRing a
 toggleAt index ring =
-    if isSelected index ring then
+    if isSelectedAt index ring then
         deselectAt index ring
 
     else
@@ -578,8 +576,8 @@ isAnySelected ring =
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is selected.
 -}
-isSelected : Int -> SelectRing a -> Bool
-isSelected index ring =
+isSelectedAt : Int -> SelectRing a -> Bool
+isSelectedAt index ring =
     let
         selectedIndex =
             modBy (size ring) index
@@ -587,11 +585,29 @@ isSelected index ring =
     ring.selected == Just selectedIndex
 
 
+{-| Indicate whether or not the selected element matches the provided predicate.
+-}
+isSelectedMatching : (a -> Bool) -> SelectRing a -> Bool
+isSelectedMatching predicate ring =
+    getSelected ring
+        |> Maybe.map predicate
+        |> Maybe.withDefault False
+
+
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is focused.
 -}
-isFocused : Int -> SelectRing a -> Bool
-isFocused index ring =
+isFocusedAt : Int -> SelectRing a -> Bool
+isFocusedAt index ring =
     ring.focused == modBy (size ring) index
+
+
+{-| Indicate whether or not the focused element matches the provided predicate.
+-}
+isFocusedMatching : (a -> Bool) -> SelectRing a -> Bool
+isFocusedMatching predicate ring =
+    getFocused ring
+        |> Maybe.map predicate
+        |> Maybe.withDefault False
 
 
 
@@ -689,7 +705,7 @@ mapEachIntoArray basicMutator focusedMutator selectedMutator ring =
                 if index == ring.focused then
                     focusedMutator element
 
-                else if isSelected index ring then
+                else if isSelectedAt index ring then
                     selectedMutator element
 
                 else
