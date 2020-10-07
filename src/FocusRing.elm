@@ -35,7 +35,7 @@ to the end of the array.
 
 # Predicates
 
-@docs isEmpty, isFocused
+@docs isEmpty isFocusedAt, isFocusedMatching
 
 
 # Accessors
@@ -354,9 +354,18 @@ isEmpty ring =
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is focused.
 -}
-isFocused : Int -> FocusRing a -> Bool
-isFocused index ring =
+isFocusedAt : Int -> FocusRing a -> Bool
+isFocusedAt index ring =
     ring.focused == modBy (size ring) index
+
+
+{-| Indicate whether or not the focused element matches the provided predicate.
+-}
+isFocusedMatching : (a -> Bool) -> FocusRing a -> Bool
+isFocusedMatching predicate ring =
+    getFocused ring
+        |> Maybe.map predicate
+        |> Maybe.withDefault False
 
 
 
