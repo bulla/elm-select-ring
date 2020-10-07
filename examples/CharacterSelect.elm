@@ -7,10 +7,12 @@ Credits to Neslug for the Mario GIFs <https://www.deviantart.com/neslug/gallery/
 -}
 
 import Browser
+import Browser.Events exposing (onKeyDown)
 import FocusRing exposing (FocusRing)
-import Html exposing (Html, a, div, h1, img, text)
+import Html exposing (Html, a, div, h1, img, strong, text)
 import Html.Attributes exposing (alt, height, src, style, title)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode exposing (Decoder)
 
 
 
@@ -21,8 +23,8 @@ main =
     Browser.element
         { init = init
         , update = update
+        , subscriptions = subscriptions
         , view = view
-        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -62,38 +64,112 @@ initCharacters =
 type Msg
     = PreviousClicked
     | NextClicked
+    | CharacterClicked Character
+    | ButtonPressed Button
+
+
+type Button
+    = LeftArrow
+    | RightArrow
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PreviousClicked ->
-            ( previousCharacter model
+            ( focusOnPreviousCharacter model
             , Cmd.none
             )
 
         NextClicked ->
-            ( nextCharacter model
+            ( focusOnNextCharacter model
+            , Cmd.none
+            )
+
+        CharacterClicked character ->
+            ( focusOnCharacter character model
+            , Cmd.none
+            )
+
+        ButtonPressed button ->
+            ( applyButtonPress button model
             , Cmd.none
             )
 
 
-{-| Focus on the previous character
+{-| Focus on the previous character.
 -}
-previousCharacter : Model -> Model
-previousCharacter model =
+focusOnPreviousCharacter : Model -> Model
+focusOnPreviousCharacter model =
     { model
         | characters = FocusRing.focusOnPrevious model.characters
     }
 
 
-{-| Focus on the next character
+{-| Focus on the next character.
 -}
-nextCharacter : Model -> Model
-nextCharacter model =
+focusOnNextCharacter : Model -> Model
+focusOnNextCharacter model =
     { model
         | characters = FocusRing.focusOnNext model.characters
     }
+
+
+{-| Toggle selection of the provided item.
+-}
+focusOnCharacter : Character -> Model -> Model
+focusOnCharacter character model =
+    { model
+        | characters = FocusRing.focusOnFirstMatching (\c -> c == character) model.characters
+    }
+
+
+{-| Apply the corresponding action in response of a key pressed.
+-}
+applyButtonPress : Button -> Model -> Model
+applyButtonPress button model =
+    case button of
+        LeftArrow ->
+            focusOnPreviousCharacter model
+
+        RightArrow ->
+            focusOnNextCharacter model
+
+
+
+-- SUBSCRIPTIONS
+
+
+{-| Subscribe to the key pressed events.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ onKeyDown (Decode.map ButtonPressed decodeButton)
+        ]
+
+
+{-| Decode a key related event into its corresponding Button event.
+-}
+decodeButton : Decoder Button
+decodeButton =
+    Decode.field "key" Decode.string
+        |> Decode.andThen toButton
+
+
+{-| Convert a key name into its corresponding Button.
+-}
+toButton : String -> Decoder Button
+toButton key =
+    case key of
+        "ArrowLeft" ->
+            Decode.succeed LeftArrow
+
+        "ArrowRight" ->
+            Decode.succeed RightArrow
+
+        _ ->
+            Decode.fail "Skip"
 
 
 
@@ -104,11 +180,14 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [ style "padding" "12px" ]
-            [ text "Select your character" ]
+            [ text "Choose your character" ]
         , div []
             [ characterSelectorView model.characters ]
-        , div [ style "clear" "both" ]
-            [ selectedCharacterView model.characters ]
+        , div
+            [ style "clear" "both"
+            , style "padding" "20px 12px"
+            ]
+            [ focusedCharacterView model.characters ]
         ]
 
 
@@ -119,7 +198,7 @@ characterSelectorView characters =
     let
         characterImages =
             characters
-                |> FocusRing.mapEachIntoList stillCharacterImage animatedCharacterImage
+                |> FocusRing.mapEachIntoList characterImage focusedCharacterImage
     in
     div []
         [ chevronLeft
@@ -130,48 +209,55 @@ characterSelectorView characters =
 
 {-| Show a still representation of the provided character.
 -}
-stillCharacterImage : Character -> Html msg
-stillCharacterImage character =
+characterImage : Character -> Html Msg
+characterImage character =
     let
         characterName =
             characterToString character
     in
     div
         [ style "float" "left"
+        , style "cursor" "pointer"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
-        [ img
-            [ src ("images/" ++ String.toLower characterName ++ ".gif")
-            , alt characterName
-            , title characterName
-            , height 64
+        [ a [ onClick (CharacterClicked character) ]
+            [ img
+                [ src ("images/" ++ String.toLower characterName ++ ".gif")
+                , alt characterName
+                , title characterName
+                , height 64
+                ]
+                []
             ]
-            []
         ]
 
 
-{-| Show an animated representation of the provided character.
+{-| Show an animated representation of the focused character that has been provided.
 -}
-animatedCharacterImage : Character -> Html msg
-animatedCharacterImage character =
+focusedCharacterImage : Character -> Html Msg
+focusedCharacterImage character =
     let
         characterName =
             characterToString character
     in
     div
         [ style "float" "left"
+        , style "background-color" "#dedede"
         , style "border" "#b189f5 4px dashed"
+        , style "cursor" "pointer"
         , style "margin" "8px"
         , style "padding" "4px"
         ]
-        [ img
-            [ src ("images/" ++ String.toLower characterName ++ "-animated.gif")
-            , alt characterName
-            , title characterName
-            , height 64
+        [ a [ onClick (CharacterClicked character) ]
+            [ img
+                [ src ("images/" ++ String.toLower characterName ++ "-animated.gif")
+                , alt characterName
+                , title characterName
+                , height 64
+                ]
+                []
             ]
-            []
         ]
 
 
@@ -231,16 +317,18 @@ chevronRight =
         ]
 
 
-{-| Show the name of the currently selected character.
+{-| Show the name of the currently focused character.
 -}
-selectedCharacterView : FocusRing Character -> Html msg
-selectedCharacterView characters =
+focusedCharacterView : FocusRing Character -> Html msg
+focusedCharacterView characters =
     let
         characterName =
             FocusRing.getFocused characters
                 |> Maybe.map characterToString
                 |> Maybe.withDefault "None"
     in
-    div [ style "padding" "20px 12px" ]
-        [ text ("Selected: " ++ characterName)
+    div [ style "margin-top" "4px" ]
+        [ strong []
+            [ text "Focused: " ]
+        , text characterName
         ]

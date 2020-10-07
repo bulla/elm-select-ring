@@ -8,7 +8,7 @@ Credits to Neslug for the Mario GIFs <https://www.deviantart.com/neslug/gallery/
 
 import Browser
 import Browser.Events exposing (onKeyDown)
-import Html exposing (Html, a, div, h1, img, text)
+import Html exposing (Html, a, div, h1, img, strong, text)
 import Html.Attributes exposing (alt, height, src, style, title)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode exposing (Decoder)
@@ -400,7 +400,9 @@ focusedItemView items =
                 |> Maybe.withDefault "None"
     in
     div [ style "margin-top" "4px" ]
-        [ text ("Focused: " ++ itemName)
+        [ strong []
+            [ text "Focused: " ]
+        , text itemName
         ]
 
 
@@ -416,5 +418,7 @@ selectedItemView items =
                 |> Maybe.withDefault "None"
     in
     div [ style "margin-top" "4px" ]
-        [ text ("Selected: " ++ itemName)
+        [ strong []
+            [ text "Selected: " ]
+        , text itemName
         ]
