@@ -176,7 +176,7 @@ prepend elements ring =
 focusOn : Int -> MultiSelectRing a -> MultiSelectRing a
 focusOn index ring =
     { ring
-        | focused = modBy index (size ring)
+        | focused = modBy (size ring) index
     }
 
 
@@ -186,7 +186,7 @@ When focus is on the last element, this results in focusing on the first element
 focusOnNext : MultiSelectRing a -> MultiSelectRing a
 focusOnNext ring =
     { ring
-        | focused = modBy (ring.focused + 1) (size ring)
+        | focused = modBy (size ring) (ring.focused + 1)
     }
 
 
@@ -196,7 +196,7 @@ When focus is on the first element, this results in focusing on the last element
 focusOnPrevious : MultiSelectRing a -> MultiSelectRing a
 focusOnPrevious ring =
     { ring
-        | focused = modBy (ring.focused - 1) (size ring)
+        | focused = modBy (size ring) (ring.focused - 1)
     }
 
 
@@ -319,7 +319,7 @@ selectAt : Int -> MultiSelectRing a -> MultiSelectRing a
 selectAt index ring =
     let
         selectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     { ring
         | selected = Set.insert selectedIndex ring.selected
@@ -368,7 +368,7 @@ selectMany indexes ring =
     let
         selectedIndexes =
             indexes
-                |> List.map (\index -> modBy index (size ring))
+                |> List.map (\index -> modBy (size ring) index)
                 |> Set.fromList
     in
     { ring
@@ -400,7 +400,7 @@ deselectAt : Int -> MultiSelectRing a -> MultiSelectRing a
 deselectAt index ring =
     let
         deselectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     { ring
         | selected = Set.remove deselectedIndex ring.selected
@@ -444,7 +444,7 @@ deselectMany indexes ring =
     let
         deselectedIndexes =
             indexes
-                |> List.map (\index -> modBy index (size ring))
+                |> List.map (\index -> modBy (size ring) index)
                 |> Set.fromList
     in
     { ring
@@ -476,7 +476,7 @@ toggleAt : Int -> MultiSelectRing a -> MultiSelectRing a
 toggleAt index ring =
     let
         toggleIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     if isSelected toggleIndex ring then
         deselectAt toggleIndex ring
@@ -537,7 +537,7 @@ isSelected : Int -> MultiSelectRing a -> Bool
 isSelected index ring =
     let
         selectedIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     Set.member selectedIndex ring.selected
 
@@ -546,7 +546,7 @@ isSelected index ring =
 -}
 isFocused : Int -> MultiSelectRing a -> Bool
 isFocused index ring =
-    ring.focused == modBy index (size ring)
+    ring.focused == modBy (size ring) index
 
 
 
@@ -566,7 +566,7 @@ get : Int -> MultiSelectRing a -> Maybe a
 get index ring =
     let
         elementIndex =
-            modBy index (size ring)
+            modBy (size ring) index
     in
     Array.get elementIndex ring.elements
 
