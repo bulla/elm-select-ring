@@ -5,11 +5,12 @@ module ColorPicker exposing (..)
 
 import Browser
 import Browser.Events exposing (onKeyDown)
-import Color exposing (Color)
+import Css exposing (..)
+import Css.Colors exposing (..)
 import FocusRing exposing (FocusRing)
-import Html exposing (Html, a, div, h1, strong, text)
-import Html.Attributes exposing (style, title)
-import Html.Events exposing (onClick)
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (css, title)
+import Html.Styled.Events exposing (onClick)
 import Json.Decode as Decode exposing (Decoder)
 
 
@@ -22,7 +23,7 @@ main =
         { init = init
         , update = update
         , subscriptions = subscriptions
-        , view = view
+        , view = view >> toUnstyled
         }
 
 
@@ -44,24 +45,21 @@ init _ =
 initColors : FocusRing Color
 initColors =
     FocusRing.fromList
-        [ Color.darkRed
-        , Color.red
-        , Color.lightRed
-        , Color.lightPurple
-        , Color.purple
-        , Color.darkPurple
-        , Color.darkBlue
-        , Color.blue
-        , Color.lightBlue
-        , Color.lightGreen
-        , Color.green
-        , Color.darkGreen
-        , Color.darkYellow
-        , Color.yellow
-        , Color.lightYellow
-        , Color.lightOrange
-        , Color.orange
-        , Color.darkOrange
+        [ darkred
+        , crimson
+        , tomato
+        , plum
+        , mediumpurple
+        , rebeccapurple
+        , darkblue
+        , royalblue
+        , cornflowerblue
+        , yellowgreen
+        , forestgreen
+        , darkgreen
+        , chocolate
+        , orange
+        , gold
         ]
 
 
@@ -151,7 +149,7 @@ applyButtonPress button model =
 {-| Subscribe to the key pressed events.
 -}
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onKeyDown (Decode.map ButtonPressed decodeButton)
         ]
@@ -187,17 +185,18 @@ toButton key =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [ style "padding" "12px" ]
+        [ h1
+            [ css [ padding (px 12) ] ]
             [ text "Pick your color" ]
         , div []
             [ colorPickerView model.colors ]
         , div
-            [ style "clear" "both"
-            , style "padding" "20px 12px"
+            [ css
+                [ property "clear" "both"
+                , padding2 (px 20) (px 12)
+                ]
             ]
-            [ focusedCssColor model.colors
-            , focusedColorDetail model.colors
-            ]
+            [ focusedColorDetail model.colors ]
         ]
 
 
@@ -223,10 +222,12 @@ colorTile : Color -> Html Msg
 colorTile color =
     a [ onClick (ColorClicked color) ]
         [ div
-            [ style "float" "left"
-            , style "background-color" (Color.toCssString color)
-            , style "cursor" "pointer"
-            , style "padding" "20px 30px"
+            [ css
+                [ float left
+                , backgroundColor color
+                , cursor pointer
+                , padding2 (px 20) (px 30)
+                ]
             ]
             []
         ]
@@ -238,13 +239,15 @@ focusedColorTile : Color -> Html Msg
 focusedColorTile color =
     a [ onClick (ColorClicked color) ]
         [ div
-            [ style "float" "left"
-            , style "background-color" (Color.toCssString color)
-            , style "border" "1px solid #696969"
-            , style "box-shadow" "4px 2px 10px 1px #2f2f2f"
-            , style "cursor" "pointer"
-            , style "padding" "24px 32px"
-            , style "margin-top" "-5px"
+            [ css
+                [ float left
+                , backgroundColor color
+                , border3 (px 1) solid (hex "696969")
+                , boxShadow5 (px 4) (px 2) (px 10) (px 1) (hex "2f2f2f")
+                , cursor pointer
+                , padding2 (px 24) (px 32)
+                , marginTop (px -5)
+                ]
             ]
             []
         ]
@@ -255,11 +258,13 @@ focusedColorTile color =
 chevronLeft : Html Msg
 chevronLeft =
     div
-        [ style "float" "left"
-        , style "font-size" "30px"
-        , style "cursor" "pointer"
-        , style "user-select" "none"
-        , style "margin" "0 8px"
+        [ css
+            [ float left
+            , fontSize (px 30)
+            , cursor pointer
+            , property "user-select" "none"
+            , margin2 zero (px 8)
+            ]
         ]
         [ a
             [ title "Previous"
@@ -274,11 +279,13 @@ chevronLeft =
 chevronRight : Html Msg
 chevronRight =
     div
-        [ style "float" "left"
-        , style "font-size" "30px"
-        , style "cursor" "pointer"
-        , style "user-select" "none"
-        , style "margin" "0 8px"
+        [ css
+            [ float left
+            , fontSize (px 30)
+            , cursor pointer
+            , property "user-select" "none"
+            , margin2 zero (px 8)
+            ]
         ]
         [ a
             [ title "Next"
@@ -293,35 +300,26 @@ chevronRight =
 focusedColorDetail : FocusRing Color -> Html msg
 focusedColorDetail colors =
     let
-        cssColor =
+        color =
             FocusRing.getFocused colors
-                |> Maybe.map Color.toCssString
-                |> Maybe.withDefault "white"
+                |> Maybe.withDefault white
     in
-    div
-        [ style "float" "left"
-        , style "background-color" cssColor
-        , style "border" "1px solid #696969"
-        , style "padding" "60px 100px"
-        ]
-        []
-
-
-{-| Show a representation of the currently focused color as a String.
--}
-focusedCssColor : FocusRing Color -> Html msg
-focusedCssColor colors =
-    let
-        cssColor =
-            FocusRing.getFocused colors
-                |> Maybe.map Color.toCssString
-                |> Maybe.withDefault "None"
-    in
-    div
-        [ style "clear" "both"
-        , style "padding" "10px 0"
-        ]
-        [ strong []
-            [ text "Focused: " ]
-        , text cssColor
+    div []
+        [ strong
+            [ css
+                [ float left
+                , padding2 (px 10) zero
+                ]
+            ]
+            [ text ("Focused: " ++ color.value) ]
+        , div
+            [ css
+                [ property "clear" "both"
+                , float left
+                , backgroundColor color
+                , border3 (px 1) solid (hex "696969")
+                , padding2 (px 60) (px 100)
+                ]
+            ]
+            []
         ]
