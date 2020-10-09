@@ -1,6 +1,9 @@
 module ColorPicker exposing (..)
 
 {-| Color picker example backed by a FocusRing.
+
+This example uses elm-css to demonstrate the usage and compatibility with another UI library.
+
 -}
 
 import Browser
@@ -305,13 +308,15 @@ focusedColorDetail colors =
                 |> Maybe.withDefault white
     in
     div []
-        [ strong
+        [ div
             [ css
                 [ float left
                 , padding2 (px 10) zero
                 ]
             ]
-            [ text ("Focused: " ++ color.value) ]
+            [ strong [] [ text "Focused: " ]
+            , span [] [ text color.value ]
+            ]
         , div
             [ css
                 [ property "clear" "both"

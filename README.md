@@ -50,8 +50,9 @@ to the end of the array.
 
 # Examples
 
-1. In-game character selector example. See CharacterSelect.elm file.
-2. 
+1. In-game character selector example using a FocusRing. See examples/CharacterSelect.elm file.
+2. Color picker example using a FocusRing with elm-css. See examples/ColorPicker.elm file.
+3. In-game item selector  example using a SelectRing. See examples/SelectRing.elm file.
 
 ## Resources
 
