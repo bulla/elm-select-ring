@@ -59,7 +59,8 @@ to the end of the array.
 
 # Accessors
 
-@docs size, get, getFirst, getLast, getFocused, getSelected
+@docs size, countSelected
+@docs get, getFirst, getLast, getFocused, getSelected
 
 
 # Transform
@@ -569,6 +570,13 @@ isFocusedMatching predicate ring =
 size : MultiSelectRing a -> Int
 size ring =
     Array.length ring.elements
+
+
+{-| Return the number of currently selected elements.
+-}
+countSelected : MultiSelectRing a -> Int
+countSelected ring =
+    Set.size ring.selected
 
 
 {-| Return Just the element of the ring at the provided index or Nothing if the ring is empty.
