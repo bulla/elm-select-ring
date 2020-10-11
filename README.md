@@ -52,10 +52,12 @@ to the end of the array.
 
 1. In-game character selector example using a FocusRing. See examples/CharacterSelect.elm file.
 2. Color picker example using a FocusRing with elm-css. See examples/ColorPicker.elm file.
-3. In-game item selector  example using a SelectRing. See examples/SelectRing.elm file.
+3. In-game item selector example using a SelectRing. See examples/SelectRing.elm file.
+4. Yahtzee-like dice game example using a MultiSelectRing. See examples/DiceSelect.elm file.
 
 ## Resources
 
 - Useful tool for animated GIFs edition: https://ezgif.com/
-- Credits to Neslug for the Mario GIFs: https://www.deviantart.com/neslug/gallery/3553116/super-mario
 - Identify Unicode characters: http://shapecatcher.com/
+- Credits to Neslug for the Mario GIFs: https://www.deviantart.com/neslug/gallery/3553116/super-mario
+- Dice images: https://www.shutterstock.com/image-illustration/3d-rendering-set-six-black-dice-751136791
