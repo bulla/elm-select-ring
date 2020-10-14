@@ -531,7 +531,14 @@ isNoneSelected ring =
 -}
 isAnySelected : MultiSelectRing a -> Bool
 isAnySelected ring =
-    Set.size ring.selected > 0
+    countSelected ring > 0
+
+
+{-| Indicate whether or not all the ring elements have been selected.
+-}
+isAllSelected : MultiSelectRing a -> Bool
+isAllSelected ring =
+    countSelected ring == size ring
 
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is selected.
@@ -561,6 +568,13 @@ isFocusedMatching predicate ring =
         |> Maybe.withDefault False
 
 
+{-| Indicate whether or not the focused element is selected.
+-}
+isFocusedSelected : MultiSelectRing a -> Bool
+isFocusedSelected ring =
+    isSelectedAt ring.focused ring
+
+
 
 -- Accessors
 
@@ -577,6 +591,13 @@ size ring =
 countSelected : MultiSelectRing a -> Int
 countSelected ring =
     Set.size ring.selected
+
+
+{-| Return the number of currently deselected elements.
+-}
+countDeselected : MultiSelectRing a -> Int
+countDeselected ring =
+    size ring - countSelected ring
 
 
 {-| Return Just the element of the ring at the provided index or Nothing if the ring is empty.
@@ -611,6 +632,13 @@ getFocused ring =
     get ring.focused ring
 
 
+{-| Return Just the focused element of the ring or Nothing if the ring is empty.
+-}
+getFocusedIndex : MultiSelectRing a -> Int
+getFocusedIndex ring =
+    ring.focused
+
+
 {-| Return the selected elements as a list. When none are selected, the empty list is returned.
 -}
 getSelected : MultiSelectRing a -> List a
@@ -625,6 +653,21 @@ getSelected ring =
                 else
                     Nothing
             )
+
+
+{-| Set the element of the ring at the provided index (modulo the ring size) and returns an updated
+MultiSelectRing without changing current focus and selection.
+-}
+set : Int -> a -> MultiSelectRing a -> MultiSelectRing a
+set index element ring =
+    let
+        elementIndex =
+            modBy (size ring) index
+    in
+    { ring
+        | elements =
+            Array.set elementIndex element ring.elements
+    }
 
 
 
