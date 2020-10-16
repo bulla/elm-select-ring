@@ -29,6 +29,7 @@ main =
 
 type alias Model =
     { dice : MultiSelectRing Die
+    , score : Int
     }
 
 
@@ -43,8 +44,10 @@ type Die
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { dice = MultiSelectRing.empty }
-    , Random.generate DiceRolled fiveRandomDice
+    ( { dice = MultiSelectRing.empty
+      , score = 0
+      }
+    , Random.generate DiceRolled (randomDiceGenerator 5)
     )
 
 
@@ -71,11 +74,11 @@ update msg model =
     case msg of
         RollDice ->
             ( model
-            , Random.generate DiceRolled fiveRandomDice
+            , Random.generate DiceRolled (randomDiceGenerator 5)
             )
 
         DiceRolled dice ->
-            ( rollDice dice model
+            ( assignRolledDice dice model
             , Cmd.none
             )
 
@@ -90,17 +93,18 @@ update msg model =
             )
 
 
-fiveRandomDice : Random.Generator (List Die)
-fiveRandomDice =
+randomDiceGenerator : Int -> Random.Generator (List Die)
+randomDiceGenerator count =
     Random.int 1 6
-        |> Random.list 5
+        |> Random.list count
         |> Random.map (\dice -> List.map intToDie dice)
 
 
-rollDice : List Die -> Model -> Model
-rollDice dice model =
+assignRolledDice : List Die -> Model -> Model
+assignRolledDice dice model =
     { model
         | dice = MultiSelectRing.fromList dice
+        , score = 0
     }
 
 
@@ -126,11 +130,15 @@ focusOnNextItem model =
 -}
 toggleDie : Die -> Model -> Model
 toggleDie toggledItem model =
-    { model
-        | dice =
+    let
+        dice =
             model.dice
                 |> MultiSelectRing.focusOnFirstMatching (\item -> item == toggledItem)
                 |> MultiSelectRing.toggleFocused
+    in
+    { model
+        | dice = dice
+        , score = sumSelectedDice dice
     }
 
 
@@ -138,9 +146,21 @@ toggleDie toggledItem model =
 -}
 toggleFocused : Model -> Model
 toggleFocused model =
+    let
+        dice =
+            MultiSelectRing.toggleFocused model.dice
+    in
     { model
-        | dice = MultiSelectRing.toggleFocused model.dice
+        | dice = dice
+        , score = sumSelectedDice dice
     }
+
+
+sumSelectedDice : MultiSelectRing Die -> Int
+sumSelectedDice dice =
+    MultiSelectRing.getSelected dice
+        |> List.map dieToInt
+        |> List.sum
 
 
 {-| Apply the corresponding action in response of a key pressed.
@@ -168,7 +188,7 @@ applyButtonPress button model =
 {-| Subscribe to the key pressed events.
 -}
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onKeyDown (Decode.map ButtonPressed decodeButton)
         ]
@@ -212,13 +232,15 @@ view model =
     div []
         [ h1 [ style "padding" "12px" ]
             [ text "Pick a few dice" ]
+        , div [ style "padding" "8px 12px" ]
+            [ text ("Score: " ++ String.fromInt model.score) ]
         , div [ style "padding" "0 12px" ]
             [ diceSelectorView model.dice ]
         , div
             [ style "clear" "both"
             , style "padding" "20px 12px"
             ]
-            [ button [ onClick RollDice ] [ text "Roll" ] ]
+            [ button [ onClick RollDice ] [ text "Roll again" ] ]
         ]
 
 
@@ -253,7 +275,7 @@ dieFaceImage die =
         ]
         [ a [ onClick (DieClicked die) ]
             [ img
-                [ src ("../images/die-face-" ++ dieValue ++ ".jpg")
+                [ src ("../images/die-face-" ++ dieValue ++ ".png")
                 , alt dieValue
                 , title dieValue
                 , width 80
@@ -270,17 +292,26 @@ focusedDieFaceImage dice focusedDie =
     let
         dieValue =
             dieToString focusedDie
+
+        backgroundColor =
+            if MultiSelectRing.isFocusedSelected dice then
+                "#dedede"
+
+            else
+                "white"
     in
     div
         [ style "float" "left"
+        , style "background-color" backgroundColor
         , style "border" "#b189f5 4px dashed"
+        , style "border-radius" "20px"
         , style "cursor" "pointer"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
         [ a [ onClick (DieClicked focusedDie) ]
             [ img
-                [ src ("../images/die-face-" ++ dieValue ++ ".jpg")
+                [ src ("../images/die-face-" ++ dieValue ++ ".png")
                 , alt dieValue
                 , title dieValue
                 , width 80
@@ -300,14 +331,16 @@ selectedDieFaceImage selectedDie =
     in
     div
         [ style "float" "left"
+        , style "background-color" "#dedede"
         , style "border" "#a1a1a1 2px dashed"
+        , style "border-radius" "20px"
         , style "cursor" "pointer"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
         [ a [ onClick (DieClicked selectedDie) ]
             [ img
-                [ src ("../images/die-face-" ++ dieValue ++ ".jpg")
+                [ src ("../images/die-face-" ++ dieValue ++ ".png")
                 , alt dieValue
                 , title dieValue
                 , width 80
