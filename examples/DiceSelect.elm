@@ -33,13 +33,17 @@ type alias Model =
     }
 
 
-type Die
+type DieFace
     = One
     | Two
     | Three
     | Four
     | Five
     | Six
+
+
+type Die
+    = Die Int DieFace
 
 
 init : () -> ( Model, Cmd Msg )
@@ -57,7 +61,7 @@ init _ =
 
 type Msg
     = RollDice
-    | DiceRolled (List Die)
+    | DiceRolled (List DieFace)
     | DieClicked Die
     | ButtonPressed Button
 
@@ -77,8 +81,8 @@ update msg model =
             , Random.generate DiceRolled (randomDiceGenerator 5)
             )
 
-        DiceRolled dice ->
-            ( assignRolledDice dice model
+        DiceRolled dieFaces ->
+            ( assignRolledDice dieFaces model
             , Cmd.none
             )
 
@@ -93,15 +97,20 @@ update msg model =
             )
 
 
-randomDiceGenerator : Int -> Random.Generator (List Die)
+randomDiceGenerator : Int -> Random.Generator (List DieFace)
 randomDiceGenerator count =
     Random.int 1 6
         |> Random.list count
-        |> Random.map (\dice -> List.map intToDie dice)
+        |> Random.map (\dice -> List.map intToDieFace dice)
 
 
-assignRolledDice : List Die -> Model -> Model
-assignRolledDice dice model =
+assignRolledDice : List DieFace -> Model -> Model
+assignRolledDice dieFaces model =
+    let
+        dice =
+            dieFaces
+                |> List.indexedMap (\position face -> Die position face)
+    in
     { model
         | dice = MultiSelectRing.fromList dice
         , score = 0
@@ -129,11 +138,11 @@ focusOnNextItem model =
 {-| Toggle selection of the provided die.
 -}
 toggleDie : Die -> Model -> Model
-toggleDie toggledItem model =
+toggleDie toggledDie model =
     let
         dice =
             model.dice
-                |> MultiSelectRing.focusOnFirstMatching (\item -> item == toggledItem)
+                |> MultiSelectRing.focusOnFirstMatching (\die -> die == toggledDie)
                 |> MultiSelectRing.toggleFocused
     in
     { model
@@ -142,7 +151,7 @@ toggleDie toggledItem model =
     }
 
 
-{-| Toggle selection of the currently focused item.
+{-| Toggle selection of the currently focused die.
 -}
 toggleFocused : Model -> Model
 toggleFocused model =
@@ -350,8 +359,8 @@ selectedDieFaceImage selectedDie =
         ]
 
 
-intToDie : Int -> Die
-intToDie value =
+intToDieFace : Int -> DieFace
+intToDieFace value =
     case value of
         1 ->
             One
@@ -376,8 +385,8 @@ intToDie value =
 
 
 dieToInt : Die -> Int
-dieToInt die =
-    case die of
+dieToInt (Die _ face) =
+    case face of
         One ->
             1
 
