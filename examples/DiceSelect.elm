@@ -1,5 +1,12 @@
 module DiceSelect exposing (..)
 
+{-| Random dice selector example backed by a MultiSelectRing.
+
+Credits to Gearstd for the 3D rendered black dice images:
+<https://www.shutterstock.com/image-illustration/3d-rendering-set-six-black-dice-751136791>
+
+-}
+
 import Browser
 import Browser.Events exposing (onKeyDown)
 import Html exposing (..)
@@ -33,6 +40,8 @@ type alias Model =
     }
 
 
+{-| Die face definition for the D6.
+-}
 type DieFace
     = One
     | Two
@@ -42,6 +51,8 @@ type DieFace
     | Six
 
 
+{-| Rolled die definition that includes its position (or id) for comparison purposes.
+-}
 type Die
     = Die Int DieFace
 
@@ -53,6 +64,15 @@ init _ =
       }
     , Random.generate DiceRolled (randomDiceGenerator 5)
     )
+
+
+{-| Random generator to generate a list of rolled dice of the provided length.
+-}
+randomDiceGenerator : Int -> Random.Generator (List DieFace)
+randomDiceGenerator count =
+    Random.int 1 6
+        |> Random.list count
+        |> Random.map (\dice -> List.map intToDieFace dice)
 
 
 
@@ -97,13 +117,6 @@ update msg model =
             )
 
 
-randomDiceGenerator : Int -> Random.Generator (List DieFace)
-randomDiceGenerator count =
-    Random.int 1 6
-        |> Random.list count
-        |> Random.map (\dice -> List.map intToDieFace dice)
-
-
 assignRolledDice : List DieFace -> Model -> Model
 assignRolledDice dieFaces model =
     let
@@ -117,7 +130,7 @@ assignRolledDice dieFaces model =
     }
 
 
-{-| Focus on the previous item.
+{-| Focus on the previous die.
 -}
 focusOnPreviousItem : Model -> Model
 focusOnPreviousItem model =
@@ -126,7 +139,7 @@ focusOnPreviousItem model =
     }
 
 
-{-| Focus on the next item.
+{-| Focus on the next die.
 -}
 focusOnNextItem : Model -> Model
 focusOnNextItem model =
@@ -165,6 +178,8 @@ toggleFocused model =
     }
 
 
+{-| Return the sum of the selected dice values.
+-}
 sumSelectedDice : MultiSelectRing Die -> Int
 sumSelectedDice dice =
     MultiSelectRing.getSelected dice
@@ -268,7 +283,7 @@ diceSelectorView dice =
     div [] diceImages
 
 
-{-| Show a still representation of the provided item.
+{-| Show a representation of the provided die.
 -}
 dieFaceImage : Die -> Html Msg
 dieFaceImage die =
@@ -330,7 +345,7 @@ focusedDieFaceImage dice focusedDie =
         ]
 
 
-{-| Show a representation of the selected item that has been provided.
+{-| Show a representation of the selected die that has been provided.
 -}
 selectedDieFaceImage : Die -> Html Msg
 selectedDieFaceImage selectedDie =
@@ -359,6 +374,8 @@ selectedDieFaceImage selectedDie =
         ]
 
 
+{-| Convert the provided integer value of a die to its corresponding DieFace.
+-}
 intToDieFace : Int -> DieFace
 intToDieFace value =
     case value of
@@ -384,6 +401,8 @@ intToDieFace value =
             One
 
 
+{-| Convert the provided die to its corresponding integer value.
+-}
 dieToInt : Die -> Int
 dieToInt (Die _ face) =
     case face of
@@ -406,6 +425,8 @@ dieToInt (Die _ face) =
             6
 
 
+{-| Convert the provided die to a string representation of its integer value.
+-}
 dieToString : Die -> String
 dieToString die =
     String.fromInt (dieToInt die)
