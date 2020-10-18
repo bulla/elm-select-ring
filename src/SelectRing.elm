@@ -1,4 +1,25 @@
-module SelectRing exposing (..)
+module SelectRing exposing
+    ( SelectRing
+    , empty, singleton, fromList, fromArray
+    , push, append, prepend
+    , removeAt, removeFirst, removeLast, removeFocused, removeSelected
+    , focusOn, focusOnNext, focusOnPrevious, focusOnFirst, focusOnLast
+    , focusOnNextMatching, focusOnPreviousMatching, focusOnFirstMatching, focusOnLastMatching
+    , selectAt, selectFirst, selectLast, selectFocused
+    , selectFirstMatching
+    , deselectAt, deselectFirst, deselectLast, deselectFocused
+    , clearSelected, deselectMatching
+    , toggleAt, toggleFirst, toggleLast, toggleFocused
+    , isEmpty
+    , isNoneSelected, isAnySelected, isSelectedAt, isSelectedMatching
+    , isFocusedAt, isFocusedMatching
+    , size
+    , get, getFirst, getLast, getFocused, getFocusedIndex, getSelected, getSelectedIndex
+    , set, setFocused, setSelected
+    , toList, toArray
+    , map
+    , mapFocused, mapEachIntoList, mapEachIntoArray
+    )
 
 {-| A ring containing at most a single selected element
 
@@ -10,6 +31,11 @@ When the cursor is at the end of the array, focusing on the next element will re
 first element of the array.
 When the cursor is at the beginning of the array, focusing on the previous element will return focus
 to the end of the array.
+
+
+# Definition
+
+@docs SelectRing
 
 
 # Construct a SelectRing
@@ -59,7 +85,9 @@ to the end of the array.
 
 # Accessors
 
-@docs size, get, getFirst, getLast, getFocused, getSelected
+@docs size
+@docs get, getFirst, getLast, getFocused, getFocusedIndex, getSelected, getSelectedIndex
+@docs set, setFocused, setSelected
 
 
 # Transform
@@ -80,11 +108,12 @@ import Maybe.Extra as Maybe
 -- Definition
 
 
-type alias SelectRing a =
-    { elements : Array a
-    , focused : Int
-    , selected : Maybe Int
-    }
+type SelectRing a
+    = SelectRing
+        { elements : Array a
+        , focused : Int
+        , selected : Maybe Int
+        }
 
 
 
@@ -95,30 +124,33 @@ type alias SelectRing a =
 -}
 empty : SelectRing a
 empty =
-    { elements = Array.empty
-    , focused = 0
-    , selected = Nothing
-    }
+    SelectRing
+        { elements = Array.empty
+        , focused = 0
+        , selected = Nothing
+        }
 
 
 {-| Construct a SelectRing from a List (which might be empty).
 -}
 fromList : List a -> SelectRing a
 fromList list =
-    { elements = Array.fromList list
-    , focused = 0
-    , selected = Nothing
-    }
+    SelectRing
+        { elements = Array.fromList list
+        , focused = 0
+        , selected = Nothing
+        }
 
 
 {-| Construct a SelectRing from an Array (which might be empty).
 -}
 fromArray : Array a -> SelectRing a
 fromArray array =
-    { elements = array
-    , focused = 0
-    , selected = Nothing
-    }
+    SelectRing
+        { elements = array
+        , focused = 0
+        , selected = Nothing
+        }
 
 
 {-| Construct a SelectRing containing a single focused element.
@@ -135,35 +167,38 @@ singleton element =
 {-| Insert an element at the end of the SelectRing.
 -}
 push : a -> SelectRing a -> SelectRing a
-push element ring =
-    { ring
-        | elements = Array.push element ring.elements
-    }
+push element (SelectRing ring) =
+    SelectRing
+        { ring
+            | elements = Array.push element ring.elements
+        }
 
 
 {-| Insert several elements at the end of the SelectRing.
 -}
 append : List a -> SelectRing a -> SelectRing a
-append elements ring =
-    { ring
-        | elements = Array.append ring.elements (Array.fromList elements)
-    }
+append elements (SelectRing ring) =
+    SelectRing
+        { ring
+            | elements = Array.append ring.elements (Array.fromList elements)
+        }
 
 
 {-| Insert several elements at the beginning of the SelectRing.
 Current focus and selected elements are maintained.
 -}
 prepend : List a -> SelectRing a -> SelectRing a
-prepend elements ring =
+prepend elements (SelectRing ring) =
     let
         shift =
             List.length elements
     in
-    { ring
-        | elements = Array.append (Array.fromList elements) ring.elements
-        , focused = ring.focused + shift
-        , selected = Maybe.map ((+) shift) ring.selected
-    }
+    SelectRing
+        { ring
+            | elements = Array.append (Array.fromList elements) ring.elements
+            , focused = ring.focused + shift
+            , selected = Maybe.map ((+) shift) ring.selected
+        }
 
 
 
@@ -180,14 +215,17 @@ If the selected element is removed, then Nothing is selected anymore.
 
 -}
 removeAt : Int -> SelectRing a -> SelectRing a
-removeAt index ring =
+removeAt index ((SelectRing ring) as selectRing) =
     let
+        ringSize =
+            size selectRing
+
         removedIndex =
-            modBy (size ring) index
+            modBy ringSize index
 
         focusedIndex =
-            if removedIndex == size ring - 1 then
-                modBy (size ring) (ring.focused - 1)
+            if removedIndex == ringSize - 1 then
+                modBy ringSize (ring.focused - 1)
 
             else
                 ring.focused
@@ -206,11 +244,12 @@ removeAt index ring =
             else
                 Just selected
     in
-    { ring
-        | elements = Array.removeAt removedIndex ring.elements
-        , focused = focusedIndex
-        , selected = selectedIndex
-    }
+    SelectRing
+        { ring
+            | elements = Array.removeAt removedIndex ring.elements
+            , focused = focusedIndex
+            , selected = selectedIndex
+        }
 
 
 {-| Remove the first element of the ring.
@@ -218,8 +257,8 @@ If the focused element is removed, the focus is put on the next element.
 If the selected element is removed, then Nothing is selected anymore.
 -}
 removeFirst : SelectRing a -> SelectRing a
-removeFirst ring =
-    removeAt 0 ring
+removeFirst selectRing =
+    removeAt 0 selectRing
 
 
 {-| Remove the last element of the ring.
@@ -227,8 +266,8 @@ If the focused element is removed, the focus is put on the previous element.
 If the selected element is removed, then Nothing is selected anymore.
 -}
 removeLast : SelectRing a -> SelectRing a
-removeLast ring =
-    removeAt (size ring - 1) ring
+removeLast selectRing =
+    removeAt (size selectRing - 1) selectRing
 
 
 {-| Remove the focused element from the ring.
@@ -240,8 +279,8 @@ If the selected element is removed, then Nothing is selected anymore.
 
 -}
 removeFocused : SelectRing a -> SelectRing a
-removeFocused ring =
-    removeAt ring.focused ring
+removeFocused ((SelectRing ring) as selectRing) =
+    removeAt ring.focused selectRing
 
 
 {-| Remove the selected element from the ring. Nothing is selected anymore.
@@ -252,10 +291,10 @@ becomes the last one in the ring.
 
 -}
 removeSelected : SelectRing a -> SelectRing a
-removeSelected ring =
+removeSelected ((SelectRing ring) as selectRing) =
     ring.selected
-        |> Maybe.map (\index -> removeAt index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> removeAt index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 
@@ -265,50 +304,53 @@ removeSelected ring =
 {-| Focus on the element at the provided index (modulo the ring size).
 -}
 focusOn : Int -> SelectRing a -> SelectRing a
-focusOn index ring =
-    { ring
-        | focused = modBy (size ring) index
-    }
+focusOn index ((SelectRing ring) as selectRing) =
+    SelectRing
+        { ring
+            | focused = modBy (size selectRing) index
+        }
 
 
 {-| Focus on the next element in the ring, after the currently focused element.
 When focus is on the last element, this results in focusing on the first element of the ring.
 -}
 focusOnNext : SelectRing a -> SelectRing a
-focusOnNext ring =
-    { ring
-        | focused = modBy (size ring) (ring.focused + 1)
-    }
+focusOnNext ((SelectRing ring) as selectRing) =
+    SelectRing
+        { ring
+            | focused = modBy (size selectRing) (ring.focused + 1)
+        }
 
 
 {-| Focus on the previous element in the ring, before to the currently focused element.
 When focus is on the first element, this results in focusing on the last element of the ring.
 -}
 focusOnPrevious : SelectRing a -> SelectRing a
-focusOnPrevious ring =
-    { ring
-        | focused = modBy (size ring) (ring.focused - 1)
-    }
+focusOnPrevious ((SelectRing ring) as selectRing) =
+    SelectRing
+        { ring
+            | focused = modBy (size selectRing) (ring.focused - 1)
+        }
 
 
 {-| Focus on the first element of the ring. Empty rings remain unaffected.
 -}
 focusOnFirst : SelectRing a -> SelectRing a
-focusOnFirst ring =
-    focusOn 0 ring
+focusOnFirst selectRing =
+    focusOn 0 selectRing
 
 
 {-| Focus on the last element of the ring. Empty rings remain unaffected.
 -}
 focusOnLast : SelectRing a -> SelectRing a
-focusOnLast ring =
-    focusOn (size ring - 1) ring
+focusOnLast selectRing =
+    focusOn (size selectRing - 1) selectRing
 
 
 {-| Focus on the next element in the ring that matches the provided predicate.
 -}
 focusOnNextMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-focusOnNextMatching predicate ring =
+focusOnNextMatching predicate ((SelectRing ring) as selectRing) =
     let
         indexedRing =
             Array.toIndexedList ring.elements
@@ -335,14 +377,14 @@ focusOnNextMatching predicate ring =
                 |> Maybe.map Tuple.first
     in
     matchingIndex
-        |> Maybe.map (\index -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> focusOn index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 {-| Focus on the previous element in the ring that matches the provided predicate.
 -}
 focusOnPreviousMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-focusOnPreviousMatching predicate ring =
+focusOnPreviousMatching predicate ((SelectRing ring) as selectRing) =
     let
         indexedRing =
             Array.toIndexedList ring.elements
@@ -371,33 +413,35 @@ focusOnPreviousMatching predicate ring =
                 |> Maybe.map Tuple.first
     in
     matchingIndex
-        |> Maybe.map (\index -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> focusOn index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 {-| Focus on the first element in the ring that matches the provided predicate.
 -}
 focusOnFirstMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-focusOnFirstMatching predicate ring =
-    ring.elements
+focusOnFirstMatching predicate selectRing =
+    selectRing
+        |> toArray
         |> Array.toIndexedList
         |> List.filter (\( _, element ) -> predicate element)
         |> List.head
-        |> Maybe.map (\( index, _ ) -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\( index, _ ) -> focusOn index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 {-| Focus on the last element in the ring that matches the provided predicate.
 -}
 focusOnLastMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-focusOnLastMatching predicate ring =
-    ring.elements
+focusOnLastMatching predicate selectRing =
+    selectRing
+        |> toArray
         |> Array.toIndexedList
         |> List.filter (\( _, element ) -> predicate element)
         |> List.reverse
         |> List.head
-        |> Maybe.map (\( index, _ ) -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\( index, _ ) -> focusOn index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 
@@ -408,53 +452,55 @@ focusOnLastMatching predicate ring =
 This replaces the currently selected element.
 -}
 selectAt : Int -> SelectRing a -> SelectRing a
-selectAt index ring =
+selectAt index ((SelectRing ring) as selectRing) =
     let
         selectedIndex =
-            modBy (size ring) index
+            modBy (size selectRing) index
     in
-    { ring
-        | selected = Just selectedIndex
-    }
+    SelectRing
+        { ring
+            | selected = Just selectedIndex
+        }
 
 
 {-| Select the first element of the ring. This replaces the currently selected element.
 -}
 selectFirst : SelectRing a -> SelectRing a
-selectFirst ring =
-    selectAt 0 ring
+selectFirst selectRing =
+    selectAt 0 selectRing
 
 
 {-| Select the last element of the ring. This replaces the currently selected element.
 -}
 selectLast : SelectRing a -> SelectRing a
-selectLast ring =
-    selectAt (size ring - 1) ring
+selectLast selectRing =
+    selectAt (size selectRing - 1) selectRing
 
 
 {-| Select the currently focused element. This replaces the currently selected element.
 -}
 selectFocused : SelectRing a -> SelectRing a
-selectFocused ring =
-    selectAt ring.focused ring
+selectFocused selectRing =
+    selectAt (getFocusedIndex selectRing) selectRing
 
 
 {-| Select the first element in the ring that matches the provided predicate.
 This replaces the currently selected element.
 -}
 selectFirstMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-selectFirstMatching predicate ring =
+selectFirstMatching predicate selectRing =
     let
         matchingIndex =
-            ring.elements
+            selectRing
+                |> toArray
                 |> Array.toIndexedList
                 |> List.filter (\( _, element ) -> predicate element)
                 |> List.map Tuple.first
                 |> List.head
     in
     matchingIndex
-        |> Maybe.map (\index -> selectAt index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> selectAt index selectRing)
+        |> Maybe.withDefault selectRing
 
 
 
@@ -464,53 +510,54 @@ selectFirstMatching predicate ring =
 {-| Deselect the currently selected element.
 -}
 clearSelected : SelectRing a -> SelectRing a
-clearSelected ring =
-    { ring
-        | selected = Nothing
-    }
+clearSelected (SelectRing ring) =
+    SelectRing
+        { ring
+            | selected = Nothing
+        }
 
 
 {-| Deselect element at the provided index (modulo the ring size).
 If the element is already deselected, the same SelectRing is returned unchanged.
 -}
 deselectAt : Int -> SelectRing a -> SelectRing a
-deselectAt index ring =
-    if isSelectedAt index ring then
-        clearSelected ring
+deselectAt index selectRing =
+    if isSelectedAt index selectRing then
+        clearSelected selectRing
 
     else
-        ring
+        selectRing
 
 
 {-| Deselect the first element of the ring (if selected).
 -}
 deselectFirst : SelectRing a -> SelectRing a
-deselectFirst ring =
-    deselectAt 0 ring
+deselectFirst selectRing =
+    deselectAt 0 selectRing
 
 
 {-| Deselect the last element of the ring (if selected).
 -}
 deselectLast : SelectRing a -> SelectRing a
-deselectLast ring =
-    deselectAt (size ring - 1) ring
+deselectLast selectRing =
+    deselectAt (size selectRing - 1) selectRing
 
 
 {-| Deselect the currently focused element.
 -}
 deselectFocused : SelectRing a -> SelectRing a
-deselectFocused ring =
-    deselectAt ring.focused ring
+deselectFocused selectRing =
+    deselectAt (getFocusedIndex selectRing) selectRing
 
 
 {-| Deselect currently selected element if it matches the provided predicate.
 -}
 deselectMatching : (a -> Bool) -> SelectRing a -> SelectRing a
-deselectMatching predicate ring =
-    getSelected ring
+deselectMatching predicate selectRing =
+    getSelected selectRing
         |> Maybe.filter (\selected -> predicate selected)
-        |> Maybe.map (\_ -> clearSelected ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\_ -> clearSelected selectRing)
+        |> Maybe.withDefault selectRing
 
 
 
@@ -520,33 +567,33 @@ deselectMatching predicate ring =
 {-| Toggle selection of the element at the provided index (modulo the ring size).
 -}
 toggleAt : Int -> SelectRing a -> SelectRing a
-toggleAt index ring =
-    if isSelectedAt index ring then
-        deselectAt index ring
+toggleAt index selectRing =
+    if isSelectedAt index selectRing then
+        deselectAt index selectRing
 
     else
-        selectAt index ring
+        selectAt index selectRing
 
 
 {-| Toggle selection of the first element in the ring.
 -}
 toggleFirst : SelectRing a -> SelectRing a
-toggleFirst ring =
-    toggleAt 0 ring
+toggleFirst selectRing =
+    toggleAt 0 selectRing
 
 
 {-| Toggle selection of the last element in the ring.
 -}
 toggleLast : SelectRing a -> SelectRing a
-toggleLast ring =
-    toggleAt (size ring - 1) ring
+toggleLast selectRing =
+    toggleAt (size selectRing - 1) selectRing
 
 
 {-| Toggle selection of the currently focused element.
 -}
 toggleFocused : SelectRing a -> SelectRing a
-toggleFocused ring =
-    toggleAt ring.focused ring
+toggleFocused selectRing =
+    toggleAt (getFocusedIndex selectRing) selectRing
 
 
 
@@ -556,31 +603,31 @@ toggleFocused ring =
 {-| Indicate whether or not the ring is empty.
 -}
 isEmpty : SelectRing a -> Bool
-isEmpty ring =
+isEmpty (SelectRing ring) =
     Array.isEmpty ring.elements
 
 
 {-| Indicate whether or not the ring has no selected element.
 -}
 isNoneSelected : SelectRing a -> Bool
-isNoneSelected ring =
+isNoneSelected (SelectRing ring) =
     Maybe.isNothing ring.selected
 
 
 {-| Indicate whether or not the ring has a selected element.
 -}
 isAnySelected : SelectRing a -> Bool
-isAnySelected ring =
+isAnySelected (SelectRing ring) =
     Maybe.isJust ring.selected
 
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is selected.
 -}
 isSelectedAt : Int -> SelectRing a -> Bool
-isSelectedAt index ring =
+isSelectedAt index ((SelectRing ring) as selectRing) =
     let
         selectedIndex =
-            modBy (size ring) index
+            modBy (size selectRing) index
     in
     ring.selected == Just selectedIndex
 
@@ -588,8 +635,8 @@ isSelectedAt index ring =
 {-| Indicate whether or not the selected element matches the provided predicate.
 -}
 isSelectedMatching : (a -> Bool) -> SelectRing a -> Bool
-isSelectedMatching predicate ring =
-    getSelected ring
+isSelectedMatching predicate selectedRing =
+    getSelected selectedRing
         |> Maybe.map predicate
         |> Maybe.withDefault False
 
@@ -597,15 +644,15 @@ isSelectedMatching predicate ring =
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is focused.
 -}
 isFocusedAt : Int -> SelectRing a -> Bool
-isFocusedAt index ring =
-    ring.focused == modBy (size ring) index
+isFocusedAt index selectedRing =
+    getFocusedIndex selectedRing == modBy (size selectedRing) index
 
 
 {-| Indicate whether or not the focused element matches the provided predicate.
 -}
 isFocusedMatching : (a -> Bool) -> SelectRing a -> Bool
-isFocusedMatching predicate ring =
-    getFocused ring
+isFocusedMatching predicate selectedRing =
+    getFocused selectedRing
         |> Maybe.map predicate
         |> Maybe.withDefault False
 
@@ -617,17 +664,17 @@ isFocusedMatching predicate ring =
 {-| Return the size of the ring.
 -}
 size : SelectRing a -> Int
-size ring =
+size (SelectRing ring) =
     Array.length ring.elements
 
 
 {-| Return Just the element of the ring at the provided index or Nothing if the ring is empty.
 -}
 get : Int -> SelectRing a -> Maybe a
-get index ring =
+get index ((SelectRing ring) as selectRing) =
     let
         elementIndex =
-            modBy (size ring) index
+            modBy (size selectRing) index
     in
     Array.get elementIndex ring.elements
 
@@ -635,30 +682,78 @@ get index ring =
 {-| Return Just the first element of the ring or Nothing if the ring is empty.
 -}
 getFirst : SelectRing a -> Maybe a
-getFirst ring =
-    get 0 ring
+getFirst selectRing =
+    get 0 selectRing
 
 
 {-| Return Just the last element of the ring or Nothing if the ring is empty.
 -}
 getLast : SelectRing a -> Maybe a
-getLast ring =
-    get (size ring - 1) ring
+getLast selectRing =
+    get (size selectRing - 1) selectRing
+
+
+{-| Return the index of the focused element in the ring.
+-}
+getFocusedIndex : SelectRing a -> Int
+getFocusedIndex (SelectRing ring) =
+    ring.focused
 
 
 {-| Return Just the focused element of the ring or Nothing if the ring is empty.
 -}
 getFocused : SelectRing a -> Maybe a
-getFocused ring =
-    get ring.focused ring
+getFocused selectRing =
+    get (getFocusedIndex selectRing) selectRing
+
+
+{-| Return Just the selected element. When none are selected, Nothing is returned instead.
+-}
+getSelectedIndex : SelectRing a -> Maybe Int
+getSelectedIndex (SelectRing ring) =
+    ring.selected
 
 
 {-| Return Just the selected element. When none are selected, Nothing is returned instead.
 -}
 getSelected : SelectRing a -> Maybe a
-getSelected ring =
+getSelected ((SelectRing ring) as selectRing) =
     ring.selected
-        |> Maybe.andThen (\index -> get index ring)
+        |> Maybe.andThen (\index -> get index selectRing)
+
+
+{-| Set the element of the ring at the provided index (modulo the ring size) and return an updated
+SelectRing without changing current focus and selection states.
+-}
+set : Int -> a -> SelectRing a -> SelectRing a
+set index element ((SelectRing ring) as selectRing) =
+    let
+        elementIndex =
+            modBy (size selectRing) index
+    in
+    SelectRing
+        { ring
+            | elements =
+                Array.set elementIndex element ring.elements
+        }
+
+
+{-| Set the focused element of the ring and return an updated SelectRing.
+-}
+setFocused : a -> SelectRing a -> SelectRing a
+setFocused element selectRing =
+    selectRing
+        |> set (getFocusedIndex selectRing) element
+
+
+{-| Set the selected element of the ring (if any) and return an updated SelectRing.
+If none is selected return the unchanged SelectRing instead.
+-}
+setSelected : a -> SelectRing a -> SelectRing a
+setSelected element ((SelectRing ring) as selectRing) =
+    ring.selected
+        |> Maybe.map (\index -> set index element selectRing)
+        |> Maybe.withDefault selectRing
 
 
 
@@ -668,23 +763,24 @@ getSelected ring =
 {-| Create a list of elements from the SelectRing.
 -}
 toList : SelectRing a -> List a
-toList ring =
+toList (SelectRing ring) =
     Array.toList ring.elements
 
 
 {-| Create an array of elements from the SelectRing.
 -}
 toArray : SelectRing a -> Array a
-toArray ring =
+toArray (SelectRing ring) =
     ring.elements
 
 
 map : (a -> b) -> SelectRing a -> SelectRing b
-map mutator ring =
-    { elements = Array.map mutator ring.elements
-    , focused = ring.focused
-    , selected = ring.selected
-    }
+map mutator (SelectRing ring) =
+    SelectRing
+        { elements = Array.map mutator ring.elements
+        , focused = ring.focused
+        , selected = ring.selected
+        }
 
 
 mapFocused : (a -> b) -> SelectRing a -> Maybe b
@@ -698,14 +794,15 @@ mapEachIntoList basicMutator focusedMutator selectedMutator ring =
 
 
 mapEachIntoArray : (a -> b) -> (a -> b) -> (a -> b) -> SelectRing a -> Array b
-mapEachIntoArray basicMutator focusedMutator selectedMutator ring =
-    ring.elements
+mapEachIntoArray basicMutator focusedMutator selectedMutator selectedRing =
+    selectedRing
+        |> toArray
         |> Array.indexedMap
             (\index element ->
-                if index == ring.focused then
+                if index == getFocusedIndex selectedRing then
                     focusedMutator element
 
-                else if isSelectedAt index ring then
+                else if isSelectedAt index selectedRing then
                     selectedMutator element
 
                 else
