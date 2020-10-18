@@ -33,8 +33,7 @@ main =
 
 
 type alias Model =
-    { items : SelectRing Item
-    }
+    { items : SelectRing Item }
 
 
 type Item
@@ -47,8 +46,7 @@ type Item
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { items = initItems
-      }
+    ( { items = initItems }
     , Cmd.none
     )
 
@@ -164,10 +162,9 @@ applyButtonPress button model =
 {-| Subscribe to the key pressed events.
 -}
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
-        [ onKeyDown (Decode.map ButtonPressed decodeButton)
-        ]
+        [ onKeyDown (Decode.map ButtonPressed decodeButton) ]
 
 
 {-| Decode a key related event into its corresponding Button event.
