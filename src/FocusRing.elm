@@ -1,4 +1,19 @@
-module FocusRing exposing (..)
+module FocusRing exposing
+    ( FocusRing
+    , empty, singleton, fromList, fromArray
+    , push, append, prepend
+    , removeAt, removeFirst, removeLast, removeFocused
+    , focusOn, focusOnNext, focusOnPrevious, focusOnFirst, focusOnLast
+    , focusOnNextMatching, focusOnPreviousMatching, focusOnFirstMatching, focusOnLastMatching
+    , isEmpty, isFocusedAt, isFocusedMatching
+    , size
+    , get, getFirst, getLast
+    , getFocused, getFocusedIndex
+    , set, setFocused
+    , toList, toArray
+    , map
+    , mapFocused, mapEachIntoList, mapEachIntoArray
+    )
 
 {-| A ring containing a single focused element
 
@@ -10,6 +25,11 @@ When the cursor is at the end of the array, focusing on the next element will re
 first element of the array.
 When the cursor is at the beginning of the array, focusing on the previous element will return focus
 to the end of the array.
+
+
+# Definition
+
+@docs FocusRing
 
 
 # Construct a FocusRing
@@ -35,12 +55,15 @@ to the end of the array.
 
 # Predicates
 
-@docs isEmpty isFocusedAt, isFocusedMatching
+@docs isEmpty, isFocusedAt, isFocusedMatching
 
 
 # Accessors
 
-@docs size, get, getFirst, getLast, getFocused
+@docs size
+@docs get, getFirst, getLast
+@docs getFocused, getFocusedIndex
+@docs set, setFocused
 
 
 # Transform
@@ -61,10 +84,11 @@ import Maybe.Extra as Maybe
 -- Definition
 
 
-type alias FocusRing a =
-    { elements : Array a
-    , focused : Int
-    }
+type FocusRing a
+    = FocusRing
+        { elements : Array a
+        , focused : Int
+        }
 
 
 
@@ -75,27 +99,30 @@ type alias FocusRing a =
 -}
 empty : FocusRing a
 empty =
-    { elements = Array.empty
-    , focused = 0
-    }
+    FocusRing
+        { elements = Array.empty
+        , focused = 0
+        }
 
 
 {-| Construct a FocusRing from a List (which might be empty).
 -}
 fromList : List a -> FocusRing a
 fromList list =
-    { elements = Array.fromList list
-    , focused = 0
-    }
+    FocusRing
+        { elements = Array.fromList list
+        , focused = 0
+        }
 
 
 {-| Construct a FocusRing from an Array (which might be empty).
 -}
 fromArray : Array a -> FocusRing a
 fromArray array =
-    { elements = array
-    , focused = 0
-    }
+    FocusRing
+        { elements = array
+        , focused = 0
+        }
 
 
 {-| Construct a FocusRing containing a single focused element.
@@ -112,34 +139,37 @@ singleton element =
 {-| Insert an element at the end of the FocusRing.
 -}
 push : a -> FocusRing a -> FocusRing a
-push element ring =
-    { ring
-        | elements = Array.push element ring.elements
-    }
+push element (FocusRing ring) =
+    FocusRing
+        { ring
+            | elements = Array.push element ring.elements
+        }
 
 
 {-| Insert several elements at the end of the FocusRing.
 -}
 append : List a -> FocusRing a -> FocusRing a
-append elements ring =
-    { ring
-        | elements = Array.append ring.elements (Array.fromList elements)
-    }
+append elements (FocusRing ring) =
+    FocusRing
+        { ring
+            | elements = Array.append ring.elements (Array.fromList elements)
+        }
 
 
 {-| Insert several elements at the beginning of the FocusRing.
 Current focus is maintained.
 -}
 prepend : List a -> FocusRing a -> FocusRing a
-prepend elements ring =
+prepend elements (FocusRing ring) =
     let
         shift =
             List.length elements
     in
-    { ring
-        | elements = Array.append (Array.fromList elements) ring.elements
-        , focused = ring.focused + shift
-    }
+    FocusRing
+        { ring
+            | elements = Array.append (Array.fromList elements) ring.elements
+            , focused = ring.focused + shift
+        }
 
 
 
@@ -154,38 +184,42 @@ becomes the last one in the ring.
 
 -}
 removeAt : Int -> FocusRing a -> FocusRing a
-removeAt index ring =
+removeAt index ((FocusRing ring) as focusRing) =
     let
+        ringSize =
+            size focusRing
+
         removedIndex =
-            modBy (size ring) index
+            modBy ringSize index
 
         focusedIndex =
-            if removedIndex == size ring - 1 then
-                modBy (size ring) (ring.focused - 1)
+            if removedIndex == ringSize - 1 then
+                modBy ringSize (ring.focused - 1)
 
             else
                 ring.focused
     in
-    { ring
-        | elements = Array.removeAt removedIndex ring.elements
-        , focused = focusedIndex
-    }
+    FocusRing
+        { ring
+            | elements = Array.removeAt removedIndex ring.elements
+            , focused = focusedIndex
+        }
 
 
 {-| Remove the first element of the ring.
 If the focused element is removed, the focus is put on the next element.
 -}
 removeFirst : FocusRing a -> FocusRing a
-removeFirst ring =
-    removeAt 0 ring
+removeFirst focusRing =
+    removeAt 0 focusRing
 
 
 {-| Remove the last element of the ring.
 If the focused element is removed, the focus is put on the previous element.
 -}
 removeLast : FocusRing a -> FocusRing a
-removeLast ring =
-    removeAt (size ring - 1) ring
+removeLast focusRing =
+    removeAt (size focusRing - 1) focusRing
 
 
 {-| Remove the focused element from the ring.
@@ -195,8 +229,8 @@ the focus is put on previous element instead. This element also becomes the last
 
 -}
 removeFocused : FocusRing a -> FocusRing a
-removeFocused ring =
-    removeAt ring.focused ring
+removeFocused focusRing =
+    removeAt (getFocusedIndex focusRing) focusRing
 
 
 
@@ -206,50 +240,53 @@ removeFocused ring =
 {-| Focus on the element at the provided index (modulo the ring size).
 -}
 focusOn : Int -> FocusRing a -> FocusRing a
-focusOn index ring =
-    { ring
-        | focused = modBy (size ring) index
-    }
+focusOn index ((FocusRing ring) as focusRing) =
+    FocusRing
+        { ring
+            | focused = modBy (size focusRing) index
+        }
 
 
 {-| Focus on the next element in the ring, after the currently focused element.
 When focus is on the last element, this results in focusing on the first element of the ring.
 -}
 focusOnNext : FocusRing a -> FocusRing a
-focusOnNext ring =
-    { ring
-        | focused = modBy (size ring) (ring.focused + 1)
-    }
+focusOnNext ((FocusRing ring) as focusRing) =
+    FocusRing
+        { ring
+            | focused = modBy (size focusRing) (ring.focused + 1)
+        }
 
 
 {-| Focus on the previous element in the ring, before to the currently focused element.
 When focus is on the first element, this results in focusing on the last element of the ring.
 -}
 focusOnPrevious : FocusRing a -> FocusRing a
-focusOnPrevious ring =
-    { ring
-        | focused = modBy (size ring) (ring.focused - 1)
-    }
+focusOnPrevious ((FocusRing ring) as focusRing) =
+    FocusRing
+        { ring
+            | focused = modBy (size focusRing) (ring.focused - 1)
+        }
 
 
 {-| Focus on the first element of the ring. Empty rings remain unaffected.
 -}
 focusOnFirst : FocusRing a -> FocusRing a
-focusOnFirst ring =
-    focusOn 0 ring
+focusOnFirst focusRing =
+    focusOn 0 focusRing
 
 
 {-| Focus on the last element of the ring. Empty rings remain unaffected.
 -}
 focusOnLast : FocusRing a -> FocusRing a
-focusOnLast ring =
-    focusOn (size ring - 1) ring
+focusOnLast focusRing =
+    focusOn (size focusRing - 1) focusRing
 
 
 {-| Focus on the next element in the ring that matches the provided predicate.
 -}
 focusOnNextMatching : (a -> Bool) -> FocusRing a -> FocusRing a
-focusOnNextMatching predicate ring =
+focusOnNextMatching predicate ((FocusRing ring) as focusRing) =
     let
         indexedRing =
             Array.toIndexedList ring.elements
@@ -276,14 +313,14 @@ focusOnNextMatching predicate ring =
                 |> Maybe.map Tuple.first
     in
     matchingIndex
-        |> Maybe.map (\index -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> focusOn index focusRing)
+        |> Maybe.withDefault focusRing
 
 
 {-| Focus on the previous element in the ring that matches the provided predicate.
 -}
 focusOnPreviousMatching : (a -> Bool) -> FocusRing a -> FocusRing a
-focusOnPreviousMatching predicate ring =
+focusOnPreviousMatching predicate ((FocusRing ring) as focusRing) =
     let
         indexedRing =
             Array.toIndexedList ring.elements
@@ -312,33 +349,35 @@ focusOnPreviousMatching predicate ring =
                 |> Maybe.map Tuple.first
     in
     matchingIndex
-        |> Maybe.map (\index -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\index -> focusOn index focusRing)
+        |> Maybe.withDefault focusRing
 
 
 {-| Focus on the first element in the ring that matches the provided predicate.
 -}
 focusOnFirstMatching : (a -> Bool) -> FocusRing a -> FocusRing a
-focusOnFirstMatching predicate ring =
-    ring.elements
+focusOnFirstMatching predicate focusRing =
+    focusRing
+        |> toArray
         |> Array.toIndexedList
         |> List.filter (\( _, element ) -> predicate element)
         |> List.head
-        |> Maybe.map (\( index, _ ) -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\( index, _ ) -> focusOn index focusRing)
+        |> Maybe.withDefault focusRing
 
 
 {-| Focus on the last element in the ring that matches the provided predicate.
 -}
 focusOnLastMatching : (a -> Bool) -> FocusRing a -> FocusRing a
-focusOnLastMatching predicate ring =
-    ring.elements
+focusOnLastMatching predicate focusRing =
+    focusRing
+        |> toArray
         |> Array.toIndexedList
         |> List.filter (\( _, element ) -> predicate element)
         |> List.reverse
         |> List.head
-        |> Maybe.map (\( index, _ ) -> focusOn index ring)
-        |> Maybe.withDefault ring
+        |> Maybe.map (\( index, _ ) -> focusOn index focusRing)
+        |> Maybe.withDefault focusRing
 
 
 
@@ -348,22 +387,22 @@ focusOnLastMatching predicate ring =
 {-| Indicate whether or not the ring is empty.
 -}
 isEmpty : FocusRing a -> Bool
-isEmpty ring =
+isEmpty (FocusRing ring) =
     Array.isEmpty ring.elements
 
 
 {-| Indicate whether or not the element at the provided index (modulo the ring size) is focused.
 -}
 isFocusedAt : Int -> FocusRing a -> Bool
-isFocusedAt index ring =
-    ring.focused == modBy (size ring) index
+isFocusedAt index focusRing =
+    getFocusedIndex focusRing == modBy (size focusRing) index
 
 
 {-| Indicate whether or not the focused element matches the provided predicate.
 -}
 isFocusedMatching : (a -> Bool) -> FocusRing a -> Bool
-isFocusedMatching predicate ring =
-    getFocused ring
+isFocusedMatching predicate focusRing =
+    getFocused focusRing
         |> Maybe.map predicate
         |> Maybe.withDefault False
 
@@ -375,17 +414,17 @@ isFocusedMatching predicate ring =
 {-| Return the size of the ring.
 -}
 size : FocusRing a -> Int
-size ring =
+size (FocusRing ring) =
     Array.length ring.elements
 
 
 {-| Return Just the element of the ring at the provided index or Nothing if the ring is empty.
 -}
 get : Int -> FocusRing a -> Maybe a
-get index ring =
+get index ((FocusRing ring) as focusRing) =
     let
         elementIndex =
-            modBy (size ring) index
+            modBy (size focusRing) index
     in
     Array.get elementIndex ring.elements
 
@@ -393,22 +432,53 @@ get index ring =
 {-| Return Just the first element of the ring or Nothing if the ring is empty.
 -}
 getFirst : FocusRing a -> Maybe a
-getFirst ring =
-    get 0 ring
+getFirst focusRing =
+    get 0 focusRing
 
 
 {-| Return Just the last element of the ring or Nothing if the ring is empty.
 -}
 getLast : FocusRing a -> Maybe a
-getLast ring =
-    get (size ring - 1) ring
+getLast focusRing =
+    get (size focusRing - 1) focusRing
 
 
 {-| Return Just the focused element of the ring or Nothing if the ring is empty.
 -}
 getFocused : FocusRing a -> Maybe a
-getFocused ring =
-    get ring.focused ring
+getFocused focusRing =
+    get (getFocusedIndex focusRing) focusRing
+
+
+{-| Return the index of the focused element in the ring.
+-}
+getFocusedIndex : FocusRing a -> Int
+getFocusedIndex (FocusRing ring) =
+    ring.focused
+
+
+{-| Set the element of the ring at the provided index (modulo the ring size) and return an updated
+FocusRing without changing current focus state.
+-}
+set : Int -> a -> FocusRing a -> FocusRing a
+set index element ((FocusRing ring) as focusRing) =
+    let
+        elementIndex =
+            modBy (size focusRing) index
+    in
+    FocusRing
+        { ring
+            | elements =
+                Array.set elementIndex element ring.elements
+        }
+
+
+{-| Set the focused element of the ring and return an updated FocusRing.
+-}
+setFocused : a -> FocusRing a -> FocusRing a
+setFocused element focusRing =
+    focusRing
+        |> set (getFocusedIndex focusRing) element
 
 
 
@@ -418,40 +488,42 @@ getFocused ring =
 {-| Create a list of elements from the FocusRing.
 -}
 toList : FocusRing a -> List a
-toList ring =
+toList (FocusRing ring) =
     Array.toList ring.elements
 
 
 {-| Create an array of elements from the FocusRing.
 -}
 toArray : FocusRing a -> Array a
-toArray ring =
+toArray (FocusRing ring) =
     ring.elements
 
 
 map : (a -> b) -> FocusRing a -> FocusRing b
-map mutator ring =
-    { elements = Array.map mutator ring.elements
-    , focused = ring.focused
-    }
+map mutator (FocusRing ring) =
+    FocusRing
+        { elements = Array.map mutator ring.elements
+        , focused = ring.focused
+        }
 
 
 mapFocused : (a -> b) -> FocusRing a -> Maybe b
-mapFocused mutator ring =
-    Maybe.map mutator (getFocused ring)
+mapFocused mutator focusRing =
+    Maybe.map mutator (getFocused focusRing)
 
 
 mapEachIntoList : (a -> b) -> (a -> b) -> FocusRing a -> List b
-mapEachIntoList basicMutator focusedMutator ring =
-    Array.toList (mapEachIntoArray basicMutator focusedMutator ring)
+mapEachIntoList basicMutator focusedMutator focusRing =
+    Array.toList (mapEachIntoArray basicMutator focusedMutator focusRing)
 
 
 mapEachIntoArray : (a -> b) -> (a -> b) -> FocusRing a -> Array b
-mapEachIntoArray basicMutator focusedMutator ring =
-    ring.elements
+mapEachIntoArray basicMutator focusedMutator focusRing =
+    focusRing
+        |> toArray
         |> Array.indexedMap
             (\index element ->
-                if index == ring.focused then
+                if index == getFocusedIndex focusRing then
                     focusedMutator element
 
                 else
