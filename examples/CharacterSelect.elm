@@ -143,7 +143,7 @@ applyButtonPress button model =
 {-| Subscribe to the key pressed events.
 -}
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onKeyDown (Decode.map ButtonPressed decodeButton)
         ]

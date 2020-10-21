@@ -1,4 +1,4 @@
-module DiceSelect exposing (..)
+module Yahtzee exposing (..)
 
 import Browser
 import Browser.Events exposing (onKeyDown)
@@ -35,13 +35,21 @@ type alias Model =
     }
 
 
-type Die
+{-| Die face definition for the D6.
+-}
+type DieFace
     = One
     | Two
     | Three
     | Four
     | Five
     | Six
+
+
+{-| Rolled die definition that includes its position (or id) for comparison purposes.
+-}
+type Die
+    = Die Int DieFace
 
 
 type GameTurn
@@ -61,13 +69,22 @@ init _ =
     )
 
 
+{-| Random generator to generate a list of rolled dice of the provided length.
+-}
+randomDiceGenerator : Int -> Random.Generator (List DieFace)
+randomDiceGenerator count =
+    Random.int 1 6
+        |> Random.list count
+        |> Random.map (\dice -> List.map intToDieFace dice)
+
+
 
 -- UPDATE
 
 
 type Msg
-    = RollDice
-    | DiceRolled (List Die)
+    = RollDice Int
+    | DiceRolled (List DieFace)
     | DieClicked Die
     | ButtonPressed Button
     | ScoreSelectedDiceAndRollRemaining Int
@@ -84,13 +101,13 @@ type Button
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        RollDice ->
+        RollDice diceCount ->
             ( model
-            , Random.generate DiceRolled (randomDiceGenerator 5)
+            , Random.generate DiceRolled (randomDiceGenerator diceCount)
             )
 
-        DiceRolled dice ->
-            ( rollDice dice model
+        DiceRolled dieFaces ->
+            ( assignRolledDice dieFaces model
             , Cmd.none
             )
 
@@ -115,17 +132,16 @@ update msg model =
             )
 
 
-randomDiceGenerator : Int -> Random.Generator (List Die)
-randomDiceGenerator count =
-    Random.int 1 6
-        |> Random.list count
-        |> Random.map (\dice -> List.map intToDie dice)
-
-
-rollDice : List Die -> Model -> Model
-rollDice dice model =
+assignRolledDice : List DieFace -> Model -> Model
+assignRolledDice dieFaces model =
+    let
+        dice =
+            dieFaces
+                |> List.indexedMap (\position face -> Die position face)
+    in
     { model
         | dice = MultiSelectRing.fromList dice
+        , score = 0
     }
 
 
@@ -284,7 +300,7 @@ diceSelectorView dice =
     div [] diceImages
 
 
-{-| Show a still representation of the provided item.
+{-| Show a representation of the provided die.
 -}
 dieFaceImage : Die -> Html Msg
 dieFaceImage die =
@@ -346,7 +362,7 @@ focusedDieFaceImage dice focusedDie =
         ]
 
 
-{-| Show a representation of the selected item that has been provided.
+{-| Show a representation of the selected die that has been provided.
 -}
 selectedDieFaceImage : Die -> Html Msg
 selectedDieFaceImage selectedDie =
@@ -375,8 +391,10 @@ selectedDieFaceImage selectedDie =
         ]
 
 
-intToDie : Int -> Die
-intToDie value =
+{-| Convert the provided integer value of a die to its corresponding DieFace.
+-}
+intToDieFace : Int -> DieFace
+intToDieFace value =
     case value of
         1 ->
             One
@@ -400,9 +418,11 @@ intToDie value =
             One
 
 
+{-| Convert the provided die to its corresponding integer value.
+-}
 dieToInt : Die -> Int
-dieToInt die =
-    case die of
+dieToInt (Die _ face) =
+    case face of
         One ->
             1
 
@@ -422,6 +442,8 @@ dieToInt die =
             6
 
 
+{-| Convert the provided die to a string representation of its integer value.
+-}
 dieToString : Die -> String
 dieToString die =
     String.fromInt (dieToInt die)
@@ -429,11 +451,8 @@ dieToString die =
 
 diceActions : MultiSelectRing Die -> Html Msg
 diceActions dice =
-    if MultiSelectRing.isNoneSelected dice then
-        button [ onClick RollDice ] [ text "Roll again" ]
-
-    else if MultiSelectRing.isAllSelected dice then
-        button [ onClick AllRemainingDiceScored ] [ text "Score all" ]
-
-    else
-        button [ onClick (ScoreSelectedDiceAndRollRemaining 2) ] [ text "Score and re-roll" ]
+    let
+        deselectedCount =
+            MultiSelectRing.countDeselected dice
+    in
+    button [ onClick (RollDice deselectedCount) ] [ text "Roll again" ]
