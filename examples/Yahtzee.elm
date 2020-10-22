@@ -30,7 +30,6 @@ main =
 type alias Model =
     { dice : MultiSelectRing Die
     , score : Int
-    , selectedScore : Int
     , turn : GameTurn
     }
 
@@ -53,7 +52,8 @@ type Die
 
 
 type GameTurn
-    = FirstTurn
+    = Initializing
+    | FirstTurn
     | SecondTurn
     | ThirdTurn
 
@@ -62,8 +62,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { dice = MultiSelectRing.empty
       , score = 0
-      , selectedScore = 0
-      , turn = FirstTurn
+      , turn = Initializing
       }
     , Random.generate DiceRolled (randomDiceGenerator 5)
     )
@@ -141,8 +140,24 @@ assignRolledDice dieFaces model =
     in
     { model
         | dice = MultiSelectRing.fromList dice
-        , score = 0
+        , turn = nextTurn model.turn
     }
+
+
+nextTurn : GameTurn -> GameTurn
+nextTurn turn =
+    case turn of
+        Initializing ->
+            FirstTurn
+
+        FirstTurn ->
+            SecondTurn
+
+        SecondTurn ->
+            ThirdTurn
+
+        ThirdTurn ->
+            Initializing
 
 
 {-| Focus on the previous item.
@@ -166,16 +181,20 @@ focusOnNextItem model =
 {-| Toggle selection of the provided die.
 -}
 toggleDie : Die -> Model -> Model
-toggleDie toggledItem model =
-    { model
-        | dice =
+toggleDie (Die index _) model =
+    let
+        dice =
             model.dice
-                |> MultiSelectRing.focusOnFirstMatching (\item -> item == toggledItem)
+                |> MultiSelectRing.focusOn index
                 |> MultiSelectRing.toggleFocused
+    in
+    { model
+        | dice = dice
+        , score = sumSelectedDice dice
     }
 
 
-{-| Toggle selection of the currently focused item.
+{-| Toggle selection of the currently focused die.
 -}
 toggleFocused : Model -> Model
 toggleFocused model =
@@ -185,7 +204,7 @@ toggleFocused model =
     in
     { model
         | dice = dice
-        , selectedScore = sumSelectedDice dice
+        , score = sumSelectedDice dice
     }
 
 
@@ -272,7 +291,9 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [ style "padding" "12px" ]
-            [ text "Pick a few dice" ]
+            [ text "Yahtzee!" ]
+        , div [ style "padding" "8px 12px" ]
+            [ text ("Turn: " ++ Debug.toString model.turn) ]
         , div [ style "padding" "8px 12px" ]
             [ text ("Score: " ++ String.fromInt model.score) ]
         , div [ style "padding" "0 12px" ]
