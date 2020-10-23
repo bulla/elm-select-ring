@@ -1,5 +1,6 @@
 module Yahtzee exposing (..)
 
+import Array
 import Browser
 import Browser.Events exposing (onKeyDown)
 import Html exposing (..)
@@ -60,12 +61,24 @@ type GameTurn
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { dice = MultiSelectRing.empty
+    ( { dice = initDice
       , score = 0
       , turn = Initializing
       }
-    , Random.generate DiceRolled (randomDiceGenerator 5)
+    , Random.generate DiceRolled fiveRandomDice
     )
+
+
+initDice : MultiSelectRing Die
+initDice =
+    MultiSelectRing.selectAll <|
+        MultiSelectRing.fromList
+            [ Die 0 One
+            , Die 1 One
+            , Die 2 One
+            , Die 3 One
+            , Die 4 One
+            ]
 
 
 {-| Random generator to generate a list of rolled dice of the provided length.
@@ -77,17 +90,21 @@ randomDiceGenerator count =
         |> Random.map (\dice -> List.map intToDieFace dice)
 
 
+fiveRandomDice : Random.Generator (List DieFace)
+fiveRandomDice =
+    randomDiceGenerator 5
+
+
 
 -- UPDATE
 
 
 type Msg
-    = RollDice Int
+    = RollSelectedDice
     | DiceRolled (List DieFace)
     | DieClicked Die
     | ButtonPressed Button
-    | ScoreSelectedDiceAndRollRemaining Int
-    | AllRemainingDiceScored
+    | AllDiceScored
 
 
 type Button
@@ -100,9 +117,9 @@ type Button
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        RollDice diceCount ->
+        RollSelectedDice ->
             ( model
-            , Random.generate DiceRolled (randomDiceGenerator diceCount)
+            , Random.generate DiceRolled fiveRandomDice
             )
 
         DiceRolled dieFaces ->
@@ -120,12 +137,7 @@ update msg model =
             , Cmd.none
             )
 
-        ScoreSelectedDiceAndRollRemaining remainingDice ->
-            ( model
-            , Random.generate DiceRolled (randomDiceGenerator remainingDice)
-            )
-
-        AllRemainingDiceScored ->
+        AllDiceScored ->
             ( finalizeScore model
             , Cmd.none
             )
@@ -134,12 +146,22 @@ update msg model =
 assignRolledDice : List DieFace -> Model -> Model
 assignRolledDice dieFaces model =
     let
-        dice =
+        rolledDice =
             dieFaces
                 |> List.indexedMap (\position face -> Die position face)
+                |> Array.fromList
+
+        selectedDieToRolledDie : Die -> Die
+        selectedDieToRolledDie ((Die index _) as die) =
+            if MultiSelectRing.isSelectedAt index model.dice then
+                Array.get index rolledDice
+                    |> Maybe.withDefault die
+
+            else
+                die
     in
     { model
-        | dice = MultiSelectRing.fromList dice
+        | dice = MultiSelectRing.map selectedDieToRolledDie model.dice
         , turn = nextTurn model.turn
     }
 
@@ -248,7 +270,7 @@ sumSelectedDice dice =
 {-| Subscribe to the key pressed events.
 -}
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onKeyDown (Decode.map ButtonPressed decodeButton)
         ]
@@ -473,7 +495,13 @@ dieToString die =
 diceActions : MultiSelectRing Die -> Html Msg
 diceActions dice =
     let
-        deselectedCount =
-            MultiSelectRing.countDeselected dice
+        selectedCount =
+            MultiSelectRing.countSelected dice
     in
-    button [ onClick (RollDice deselectedCount) ] [ text "Roll again" ]
+    if MultiSelectRing.isNoneSelected dice then
+        button [ onClick AllDiceScored ]
+            [ text "Keep all" ]
+
+    else
+        button [ onClick RollSelectedDice ]
+            [ text ("Roll " ++ String.fromInt selectedCount) ]
