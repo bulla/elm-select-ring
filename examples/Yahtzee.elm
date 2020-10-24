@@ -56,7 +56,8 @@ type GameTurn
     = Initializing
     | FirstTurn
     | SecondTurn
-    | ThirdTurn
+    | LastTurn
+    | GameOver
 
 
 init : () -> ( Model, Cmd Msg )
@@ -105,6 +106,7 @@ type Msg
     | DieClicked Die
     | ButtonPressed Button
     | AllDiceScored
+    | GameRestarted
 
 
 type Button
@@ -142,6 +144,9 @@ update msg model =
             , Cmd.none
             )
 
+        GameRestarted ->
+            init ()
+
 
 assignRolledDice : List DieFace -> Model -> Model
 assignRolledDice dieFaces model =
@@ -159,9 +164,16 @@ assignRolledDice dieFaces model =
 
             else
                 die
+
+        dice =
+            model.dice
+                |> MultiSelectRing.map selectedDieToRolledDie
+                |> MultiSelectRing.deselectAll
+                |> MultiSelectRing.focusOnFirst
     in
     { model
-        | dice = MultiSelectRing.map selectedDieToRolledDie model.dice
+        | dice = dice
+        , score = sumDice dice
         , turn = nextTurn model.turn
     }
 
@@ -176,9 +188,12 @@ nextTurn turn =
             SecondTurn
 
         SecondTurn ->
-            ThirdTurn
+            LastTurn
 
-        ThirdTurn ->
+        LastTurn ->
+            GameOver
+
+        GameOver ->
             Initializing
 
 
@@ -204,15 +219,11 @@ focusOnNextItem model =
 -}
 toggleDie : Die -> Model -> Model
 toggleDie (Die index _) model =
-    let
-        dice =
+    { model
+        | dice =
             model.dice
                 |> MultiSelectRing.focusOn index
                 |> MultiSelectRing.toggleFocused
-    in
-    { model
-        | dice = dice
-        , score = sumSelectedDice dice
     }
 
 
@@ -220,13 +231,8 @@ toggleDie (Die index _) model =
 -}
 toggleFocused : Model -> Model
 toggleFocused model =
-    let
-        dice =
-            MultiSelectRing.toggleFocused model.dice
-    in
     { model
-        | dice = dice
-        , score = sumSelectedDice dice
+        | dice = MultiSelectRing.toggleFocused model.dice
     }
 
 
@@ -251,14 +257,13 @@ applyButtonPress button model =
 finalizeScore : Model -> Model
 finalizeScore model =
     { model
-        | dice = MultiSelectRing.empty
-        , score = sumSelectedDice model.dice
+        | turn = GameOver
     }
 
 
-sumSelectedDice : MultiSelectRing Die -> Int
-sumSelectedDice dice =
-    MultiSelectRing.getSelected dice
+sumDice : MultiSelectRing Die -> Int
+sumDice dice =
+    MultiSelectRing.toList dice
         |> List.map dieToInt
         |> List.sum
 
@@ -319,26 +324,34 @@ view model =
         , div [ style "padding" "8px 12px" ]
             [ text ("Score: " ++ String.fromInt model.score) ]
         , div [ style "padding" "0 12px" ]
-            [ diceSelectorView model.dice ]
+            [ diceSelectorView model.dice model.turn ]
         , div
             [ style "clear" "both"
             , style "padding" "20px 12px"
             ]
-            [ diceActions model.dice ]
+            [ gameActions model.dice model.turn ]
         ]
 
 
 {-| Show a representation of the dice MultiSelectRing.
 -}
-diceSelectorView : MultiSelectRing Die -> Html Msg
-diceSelectorView dice =
+diceSelectorView : MultiSelectRing Die -> GameTurn -> Html Msg
+diceSelectorView dice turn =
     let
         diceImages =
-            dice
-                |> MultiSelectRing.mapEachIntoList
-                    dieFaceImage
-                    (focusedDieFaceImage dice)
-                    selectedDieFaceImage
+            if turn == GameOver then
+                dice
+                    |> MultiSelectRing.mapEachIntoList
+                        dieFaceImage
+                        dieFaceImage
+                        dieFaceImage
+
+            else
+                dice
+                    |> MultiSelectRing.mapEachIntoList
+                        clickableDieFaceImage
+                        (focusedDieFaceImage dice)
+                        selectedDieFaceImage
     in
     div [] diceImages
 
@@ -353,7 +366,32 @@ dieFaceImage die =
     in
     div
         [ style "float" "left"
+        , style "user-select" "none"
+        , style "margin" "8px"
+        , style "padding" "2px"
+        ]
+        [ img
+            [ src ("../images/die-face-" ++ dieValue ++ ".png")
+            , alt dieValue
+            , title dieValue
+            , width 80
+            ]
+            []
+        ]
+
+
+{-| Show a representation of the provided die.
+-}
+clickableDieFaceImage : Die -> Html Msg
+clickableDieFaceImage die =
+    let
+        dieValue =
+            dieToString die
+    in
+    div
+        [ style "float" "left"
         , style "cursor" "pointer"
+        , style "user-select" "none"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
@@ -390,6 +428,7 @@ focusedDieFaceImage dice focusedDie =
         , style "border" "#b189f5 4px dashed"
         , style "border-radius" "20px"
         , style "cursor" "pointer"
+        , style "user-select" "none"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
@@ -419,6 +458,7 @@ selectedDieFaceImage selectedDie =
         , style "border" "#a1a1a1 2px dashed"
         , style "border-radius" "20px"
         , style "cursor" "pointer"
+        , style "user-select" "none"
         , style "margin" "8px"
         , style "padding" "2px"
         ]
@@ -492,16 +532,20 @@ dieToString die =
     String.fromInt (dieToInt die)
 
 
-diceActions : MultiSelectRing Die -> Html Msg
-diceActions dice =
-    let
-        selectedCount =
-            MultiSelectRing.countSelected dice
-    in
-    if MultiSelectRing.isNoneSelected dice then
+gameActions : MultiSelectRing Die -> GameTurn -> Html Msg
+gameActions dice turn =
+    if turn == GameOver then
+        button [ onClick GameRestarted ]
+            [ text "Start over" ]
+
+    else if MultiSelectRing.isNoneSelected dice then
         button [ onClick AllDiceScored ]
             [ text "Keep all" ]
 
     else
+        let
+            selectedCount =
+                MultiSelectRing.countSelected dice
+        in
         button [ onClick RollSelectedDice ]
             [ text ("Roll " ++ String.fromInt selectedCount) ]
