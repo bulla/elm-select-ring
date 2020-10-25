@@ -33,8 +33,7 @@ main =
 
 
 type alias Model =
-    { characters : FocusRing Character
-    }
+    { characters : FocusRing Character }
 
 
 type Character
@@ -46,8 +45,7 @@ type Character
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { characters = initCharacters
-      }
+    ( { characters = initCharacters }
     , Cmd.none
     )
 
@@ -115,7 +113,7 @@ focusOnNextCharacter model =
     }
 
 
-{-| Toggle selection of the provided item.
+{-| Toggle selection of the provided character.
 -}
 focusOnCharacter : Character -> Model -> Model
 focusOnCharacter character model =
@@ -145,8 +143,7 @@ applyButtonPress button model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ onKeyDown (Decode.map ButtonPressed decodeButton)
-        ]
+        [ onKeyDown (Decode.map ButtonPressed decodeButton) ]
 
 
 {-| Decode a key related event into its corresponding Button event.
